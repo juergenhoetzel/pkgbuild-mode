@@ -1,0 +1,565 @@
+;; $Id: pkgbuild-mode.el,v 1.23 2007/10/20 16:02:14 juergen Exp $
+;; Copyright (C) 2005-2007 Juergen Hoetzel
+
+;;; License
+
+;; This program is free software; you can redistribute it and/or
+;; modify it under the terms of the GNU General Public License
+;; as published by the Free Software Foundation; either version 2
+;; of the License, or (at your option) any later version.
+
+;; This program is distributed in the hope that it will be useful,
+;; but WITHOUT ANY WARRANTY; without even the implied warranty of
+;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;; GNU General Public License for more details.
+
+;; You should have received a copy of the GNU General Public License
+;; along with this program; if not, write to the Free Software
+;; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+
+;;; TODO
+;; - menu
+;; - namcap/devtools integration
+;; - use auto-insert
+
+;;; Usage
+
+;; Put this in your .emacs file to enable autoloading of pkgbuild-mode
+;; and auto-recognition of "PKGBUILD" files:
+;;
+;;  (autoload 'pkgbuild-mode "pkgbuild-mode.el" "PKGBUILD mode." t)
+;;  (setq auto-mode-alist (append '(("/PKGBUILD$" . pkgbuild-mode))
+;;                                auto-mode-alist))
+
+;;; Changelog:
+
+;; 0.9
+;;    fixed `pkgbuild-tar' (empty directory name: thanks Stefan Husmann)
+;;    new custom variable: pkgbuild-template 
+;;    code cleanup
+
+;; 0.8 
+;;    added `pkgbuild-shell-command' and
+;;      `pkgbuild-shell-command-to-string' (required to always use
+;;      "/bin/bash" when calling shell functions, which create new
+;;      buffers)
+
+
+;; 0.7 make shell-file-name buffer-local set to "/bin/bash" (required
+;; to parse PKGBUILDs)
+
+
+;; 0.6
+;;    New interactive function pkgbuild-etags (C-c C-e) 
+;;      create tags table for all PKGBUILDs in your source tree, so you
+;;      can search PKGBUILDs by pkgname. Customize your tags-table-list 
+;;      to include the TAGS file in your source tree. 
+;;    changed default  makepkg-command (disabled ANSI colors in emacs TERM) 
+;;    set default indentation to 2
+
+
+;; 0.5
+;;    New interactive function pkgbuild-browse-url to visit project's website (C-c C-u).
+;;      Customize your browse-url-browser-function
+;;    emacs 22 (cvs snapshot) compatibility: ensure makepkg buffer is not read-only
+
+
+;; 0.4
+;;    handle source parse errors when updating md5sums and opening PKGBUILDs
+;;    only update md5sums if all sources are available
+;;    code cleanup
+;;    highlight sources not available when trying to update md5sums and opening PKGBUILDs (this does not work when globbing returns multiple filenames)
+
+
+;; 0.3
+;;   Update md5sums line when saving PKGBUILD 
+;;     (Can be disabled via custom variable [pkgbuild-update-md5sums-on-save])
+;;   New interactive function pkgbuild-tar to create Source Tarball (C-c C-a)
+;;     (Usefull for AUR uploads)
+;;   Insert warn-messages in md5sums line when source files are not present
+;;   Several bug fixes
+
+;;; Code
+
+
+(require 'cl)
+(require 'sh-script)
+(require 'advice)
+
+(defconst pkgbuild-mode-version "0.9" "Version of `pkgbuild-mode'.")
+
+(defconst pkgbuild-mode-menu
+  (purecopy '("PKGBUILD"
+              ["Update md5sums" pkgbuild-update-md5sums-line t]
+              ["Browse url" pkgbuild-browse-url t]
+              ["Increase release tag"    pkgbuild-increase-release-tag t]
+              "---"
+              ("Build package"
+               ["Build tarball"       pkgbuild-tar                t]
+               ["Build binary package"    pkgbuild-makepkg             t])
+              "---"
+              ["Creates TAGS file"         pkgbuild-etags       t]
+              "---"
+              ["About pkgbuild-mode"         pkgbuild-about-pkgbuild-mode       t]
+              )))
+
+;; Local variables
+
+(defgroup pkgbuild nil
+  "pkgbuild mode (ArchLinux Packages)."
+  :prefix "pkgbuild-"
+  :group 'languages)
+
+(defcustom pkgbuild-template
+"# $Id: pkgbuild-mode.el,v 1.23 2007/10/20 16:02:14 juergen Exp $
+# Maintainer: %s <%s>
+pkgname=%s  
+pkgver=VERSION
+pkgrel=1 
+pkgdesc=\"\"
+url=\"\"
+arch=('i686')
+license=('GPL')
+depends=()
+makedepends=()
+conflicts=()
+replaces=()
+backup=()
+install=
+source=($pkgname-$pkgver.tar.gz)
+md5sums=()
+build() {
+  cd $startdir/src/$pkgname-$pkgver
+  ./configure --prefix=/usr
+  make || return 1
+  make DESTDIR=$startdir/pkg install
+}"
+  "Template for new PKGBUILDs"
+  :type 'string
+  :group 'pkgbuild)
+
+(defcustom pkgbuild-etags-command "find %s -name PKGBUILD|xargs etags.emacs -o %s --language=none --regex='/pkgname=\\([^ \t]+\\)/\\1/'"
+  "pkgbuild-etags needs to call the find and the etags program. %s is
+the placeholder for the toplevel directory and tagsfile"
+  :type 'string
+  :group 'pkgbuild)
+
+(defcustom pkgbuild-initialize t
+  "Automatically add default headings to new pkgbuild files."
+  :type 'boolean
+  :group 'pkgbuild)
+
+(defcustom pkgbuild-update-md5sums-on-save t
+  "*Non-nil means buffer-safe will call a hook to update the md5sums line."
+  :type 'boolean
+  :group 'pkgbuild)
+
+(defcustom pkgbuild-read-makepkg-command t
+  "*Non-nil means \\[pkgbuild-makepkg] reads the makepkg command to use.
+Otherwise, \\[pkgbuild-makepkg] just uses the value of `pkgbuild-makepkg-command'."
+  :type 'boolean
+  :group 'pkgbuild)
+
+(defcustom pkgbuild-read-tar-command t
+  "*Non-nil means \\[pkgbuild-tar] reads the tar command to use."
+  :type 'boolean
+  :group 'pkgbuild)
+
+(defcustom pkgbuild-makepkg-command "makepkg -m -f "
+  "Command to create an ArchLinux package."
+  :type 'string
+  :group 'pkgbuild)
+
+(defcustom pkgbuild-user-full-name user-full-name
+  "*Full name of the user.
+This is used in the Maintainer tag. It defaults to the
+value of `user-full-name'."
+  :type 'string
+  :group 'pkgbuild)
+
+(defcustom pkgbuild-user-mail-address user-mail-address
+  "*Email address of the user.
+This is used in the Maintainer tag. It defaults to the
+value of `user-mail-address'."
+  :type 'string
+  :group 'pkgbuild)
+
+(defcustom pkgbuild-source-directory-locations ".:src:/var/cache/pacman/src"
+  "search path for PKGBUILD source files"
+  :type 'string
+  :group 'pkgbuild)
+
+(defcustom pkgbuild-md5sums-command "makepkg -g 2>/dev/null"
+  "shell command to generate mds5sums"
+  :type 'string
+  :group 'pkgbuild)
+
+(defcustom pkgbuild-ask-about-save t
+  "*Non-nil means \\[pkgbuild-makepkg] asks which buffers to save before starting packaging.
+Otherwise, it saves all modified buffers without asking."
+  :type 'boolean
+  :group 'pkgbuild)
+
+(defconst pkgbuild-bash-error-line-re
+  "PKGBUILD:[ \t]+line[ \t]\\([0-9]+\\):[ \t]"
+  "Regular expression that describes errors.")
+
+(defvar pkgbuild-mode-map nil    ; Create a mode-specific keymap.
+  "Keymap for pkgbuild mode.")
+
+(defface pkgbuild-error-face '((t (:underline "red")))
+  "Face for PKGBUILD errors."
+  :group 'pkgbuild)
+
+(defvar pkgbuild-makepkg-history nil)
+
+(defvar pkgbuild-in-hook-recursion nil) ;avoid recursion
+
+(defvar pkgbuild-emacs                  ;helper variable for xemacs compatibility
+  (cond
+   ((string-match "XEmacs" emacs-version)
+    'xemacs)
+   (t
+    'emacs))
+  "The type of Emacs we are currently running.")
+
+
+(unless pkgbuild-mode-map               ; Do not change the keymap if it is already set up.
+  (setq pkgbuild-mode-map (make-sparse-keymap))
+  (define-key pkgbuild-mode-map "\C-c\C-r"  'pkgbuild-increase-release-tag)
+  (define-key pkgbuild-mode-map "\C-c\C-b" 'pkgbuild-makepkg)
+  (define-key pkgbuild-mode-map "\C-c\C-a" 'pkgbuild-tar)
+  (define-key pkgbuild-mode-map "\C-c\C-u" 'pkgbuild-browse-url)
+  (define-key pkgbuild-mode-map "\C-c\C-m" 'pkgbuild-update-md5sums-line)
+  (define-key pkgbuild-mode-map "\C-c\C-e" 'pkgbuild-etags)
+  )
+
+(defun pkgbuild-trim-right (str)        ;Helper function
+  "Trim whitespace from end of the string"
+  (if (string-match "[ \f\t\n\r\v]+$" str -1) 
+      (pkgbuild-trim-right (substring str 0 -1))
+    str))
+
+(defun pkgbuild-source-points()
+  (interactive)
+  (save-excursion
+    (goto-char (point-min))
+    (if (search-forward-regexp "^\\s-*source=(\\([^()]*\\))" (point-max) t)
+        (let ((l (list (match-beginning 1) (match-end 1)))
+              (end (match-end 1)))
+          (goto-char (match-beginning 1))
+          (while (search-forward-regexp "\\(\\\\[ \f\t\n\r\v]\\|[ \f\t\n\r\v]\\)+" end t)
+                  (setcdr (last l 2) (cons (match-beginning 0) (cdr (last l 2))))
+                  (setcdr (last l 2) (cons (match-end 1) (cdr (last l 2)))))
+          l)
+      nil)))
+
+(defun pkgbuild-source-locations() 
+  "find source regions"
+  (delete-if (lambda (region) (= (car region) (cdr region))) (loop for item on (pkgbuild-source-points) by 'cddr collect (cons (car item) (cadr item)))))
+
+(defun pkgbuild-shell-command-to-string(COMMAND)
+  "same as `shell-command-to-string' always uses '/bin/bash'"
+  (let ((shell-file-name "/bin/bash"))
+    (shell-command-to-string COMMAND)))
+
+(defun pkgbuild-shell-command (COMMAND &optional OUTPUT-BUFFER ERROR-BUFFER)
+  "same as `shell-command' always uses '/bin/bash'"
+  (let ((shell-file-name "/bin/bash"))
+    (shell-command COMMAND OUTPUT-BUFFER ERROR-BUFFER)))
+  
+(defun pkgbuild-source-check ()
+  "highlight sources not available. Return true if all sources are available. This does not work if globbing returns multiple files"
+  (interactive)
+  (save-excursion 
+    (goto-char (point-min))
+    (pkgbuild-delete-all-overlays)
+    (if (search-forward-regexp "^\\s-*source=(\\([^()]*\\))" (point-max) t)
+        (let ((all-available t)
+              (sources (split-string (pkgbuild-shell-command-to-string "source PKGBUILD 2>/dev/null && for source in ${source[@]};do echo $source|sed 's|^.*://.*/||g';done")))
+              (source-locations (pkgbuild-source-locations)))
+          (if (= (length sources) (length source-locations)) 
+              (progn
+                (loop for source in sources
+                      for source-location in source-locations
+                      do (when (not (pkgbuild-find-file source (split-string pkgbuild-source-directory-locations ":")))
+                           (progn 
+                             (setq all-available nil)
+                             (pkgbuild-make-overlay (car source-location) (cdr source-location)))))
+                all-available)
+            (progn
+              (message "cannot verfify sources: don't use globbing %d/%d" (length sources) (length source-locations))
+              nil)))
+      (progn 
+        (message "no source line found")
+        nil))))
+      
+(defun pkgbuild-delete-all-overlays ()
+  "Delete all the overlays used by pkgbuild-mode."
+  (interactive)                         ;test
+  (let ((l (overlays-in (point-min) (point-max))))
+    (while (consp l)
+      (progn
+        (if (pkgbuild-overlay-p (car l))
+            (delete-overlay (car l)))
+        (setq l (cdr l))))))
+
+(defun pkgbuild-overlay-p (o)
+  "A predicate that return true iff O is an overlay used by pkgbuild-mode."
+  (and (overlayp o) (overlay-get o 'pkgbuild-overlay)))
+
+(defun pkgbuild-make-overlay (beg end)
+  "Allocate an overlay to highlight. BEG and END specify the range in the buffer."
+  (let ((pkgbuild-overlay (make-overlay beg end nil t nil)))
+    (overlay-put pkgbuild-overlay 'face 'pkgbuild-error-face)
+    (overlay-put pkgbuild-overlay 'pkgbuild-overlay t)
+    pkgbuild-overlay))
+
+(defun pkgbuild-find-file (file locations)
+  "Find file in multible locations"
+  (remove-if-not 'file-readable-p (mapcar (lambda (dir) (expand-file-name file dir)) locations)))
+
+(defun pkgbuild-md5sum (&rest files)
+  (if (not (null files))
+      (let* ((file (car files))
+             (abspath (pkgbuild-find-file file (split-string pkgbuild-source-directory-locations ":"))))
+        (if (null abspath)
+            (error "File %s not found in directories %s" file pkgbuild-source-directory-locations))
+        (cons (car (split-string (pkgbuild-shell-command-to-string (concat "md5sum " (car abspath)))))
+              (apply 'pkgbuild-md5sum (cdr files))))))
+
+(defun pkgbuild-md5sums-line (&rest files)
+  "calculate md5sums=() line in PKGBUILDs"
+  (let ((sums (apply 'pkgbuild-md5sum files)))
+    (format "md5sums=(%s)" 
+            (apply 'concat (loop 
+                            for item in sums
+                            for position = 0 then (1+ position)
+                            for offset = (% position 2)
+                            collect (cond 
+                                     ((= position 0) (format "'%s'" item))
+                                     ((= offset 0) (format "         '%s'" item))
+                                     ((= offset 1) (format " '%s'%s" item (if (= position (1- (length sums))) "" "\\\n" )))
+                                     (t (error))))))))
+
+(defun pkgbuild-update-md5sums-line ()
+  "Update the md5sums line in a PKGBUILD."
+  (interactive)
+  (if (not (file-readable-p "PKGBUILD")) (error "Missing PKGBUILD")
+    (if (not (pkgbuild-syntax-check)) (error "Syntax Error")
+      (if (pkgbuild-source-check)       ;all sources available
+          (save-excursion 
+            (goto-char (point-min))
+            (if (re-search-forward "^md5sums=([^()]*)[ \f\t\r\v]*\n?" (point-max) t) ;md5sum line exists
+                (delete-region (match-beginning 0) (match-end 0)))
+            (goto-char (point-min))
+            (if (re-search-forward "^source=([^()]*)" (point-max) t)
+                (insert "\n")
+              (error "Missing source line"))
+            (insert (pkgbuild-trim-right (apply 'pkgbuild-md5sums-line
+                                                 (split-string (pkgbuild-shell-command-to-string "source PKGBUILD 2>/dev/null && for source in ${source[@]};do echo $source|sed 's|^.*://.*/||g';done"))))))))))
+
+(defun pkgbuild-about-pkgbuild-mode (&optional arg)
+  "About `pkgbuild-mode'."
+  (interactive "p")
+  (message
+   (concat "pkgbuild-mode version "
+           pkgbuild-mode-version
+           " by Juergen Hoetzel, <juergen@hoetzel.info>")))
+
+(defun pkgbuild-update-md5sums-line-hook ()
+  "Update md5lines if the file was modified"
+  (if (and pkgbuild-update-md5sums-on-save (not pkgbuild-in-hook-recursion))
+      (progn
+        (setq pkgbuild-in-hook-recursion t)
+        (save-buffer)                   ;always save BUFFER 2 times so we get the correct md5sums in this hook
+        (setq pkgbuild-in-hook-recursion nil)
+        (pkgbuild-update-md5sums-line))))
+
+(defun pkgbuild-initialize ()
+  "Create a default pkgbuild if one does not exist or is empty."
+  (interactive)
+  (insert (format pkgbuild-template
+		  pkgbuild-user-full-name 
+		  pkgbuild-user-mail-address 
+		  (or (pkgbuild-get-directory (buffer-file-name)) "NAME"))))
+
+(defun pkgbuild-process-check (buffer)
+  "Check if BUFFER has a running process.
+If so, give the user the choice of aborting the process or the current
+command."
+  (let ((process (get-buffer-process (get-buffer buffer))))
+    (if (and process (eq (process-status process) 'run))
+        (if (yes-or-no-p (concat "Process `" (process-name process)
+                                 "' running.  Kill it? "))
+            (delete-process process)
+          (error "Cannot run two simultaneous processes ...")))))
+
+(defun pkgbuild-get-directory (buffer-file-name)
+    (car (last (split-string (file-name-directory (buffer-file-name)) "/" t))))
+
+(defun pkgbuild-makepkg (command)
+  "Build this package."
+  (interactive
+   (if pkgbuild-read-makepkg-command
+       (list (read-from-minibuffer "makepkg command: " 
+                                   (eval pkgbuild-makepkg-command)
+                                   nil nil '(pkgbuild-makepkg-history . 1)))
+     (list (eval pkgbuild-makepkg-command))))
+  (save-some-buffers (not pkgbuild-ask-about-save) nil)
+  (if (file-readable-p "PKGBUILD")
+      (let ((pkgbuild-buffer-name (concat "*"  command " " (pkgbuild-get-directory buffer-file-name)  "*")))
+        (pkgbuild-process-check pkgbuild-buffer-name)
+        (if (get-buffer pkgbuild-buffer-name)
+            (kill-buffer pkgbuild-buffer-name))
+        (create-file-buffer pkgbuild-buffer-name)
+        (display-buffer pkgbuild-buffer-name)
+        (save-excursion
+          (set-buffer (get-buffer pkgbuild-buffer-name))
+          (if (fboundp 'compilation-mode) (compilation-mode pkgbuild-buffer-name))
+          (if buffer-read-only (toggle-read-only)) 
+          (goto-char (point-max)))
+        (let ((process
+               (start-process-shell-command "makepkg" pkgbuild-buffer-name
+                                            command)))
+          (set-process-filter process 'pkgbuild-command-filter)))
+    (error "No PKGBUILD in current directory")))
+
+(defun pkgbuild-command-filter (process string)
+  "Filter to process normal output."
+  (save-excursion
+    (set-buffer (process-buffer process))
+    (save-excursion
+      (goto-char (process-mark process))
+      (insert-before-markers string)
+      (set-marker (process-mark process) (point)))))
+
+(defun pkgbuild-increase-release-tag ()
+  "Increase the release tag by 1."
+  (interactive)
+  (save-excursion
+    (goto-char (point-min))
+    (if (search-forward-regexp "^pkgrel=[ \t]*\\([0-9]+\\)[ \t]*$" nil t)
+        (let ((release (1+ (string-to-number (match-string 1)))))
+          (setq release (int-to-string release))
+          (replace-match (concat "pkgrel=" release))
+          (message (concat "Release tag changed to " release ".")))
+      (message "No Release tag found..."))))
+
+(defun pkgbuild-syntax-check ()
+  "evaluate PKGBUILD and search stderr for errors"
+  (interactive)
+  (let  (
+         (stderr-buffer (concat "*PKGBUILD(" (pkgbuild-get-directory (buffer-file-name)) ") stderr*"))
+        (stdout-buffer (concat "*PKGBUILD(" (pkgbuild-get-directory (buffer-file-name)) ") stdout*")))
+    (if (get-buffer stderr-buffer) (kill-buffer stderr-buffer))
+    (if (get-buffer stdout-buffer) (kill-buffer stdout-buffer))
+    (if (not (equal 
+              (flet ((message (arg &optional args) nil)) ;Hack disable empty output
+                (pkgbuild-shell-command "source PKGBUILD" stdout-buffer stderr-buffer))
+              0))
+        (multiple-value-bind (err-p line) (pkgbuild-postprocess-stderr stderr-buffer)
+          (if err-p
+              (goto-line line))
+          nil)
+      t)))
+
+
+(defun pkgbuild-postprocess-stderr (buf)        ;multiple values return
+  "Find errors in BUF.If an error occurred return multiple values (t line), otherwise return multiple values (nil line).  BUF must exist."
+  (let (line err-p)
+    (save-excursion
+      (set-buffer buf)
+      (beginning-of-buffer)
+      (if (re-search-forward pkgbuild-bash-error-line-re nil t)
+          (progn
+            (setq line (string-to-number (match-string 1)))
+            ; (pkgbuild-highlight-line line) TODO
+            (setq err-p t)))
+      (values err-p line))))
+  
+(defun pkgbuild-tarball-files ()
+  "Return a list of required files for the tarball package"
+  (cons "PKGBUILD"
+	(remove-if (lambda (x) (string-match "^\\(https?\\|ftp\\)://" x))
+		   (split-string (pkgbuild-shell-command-to-string 
+				  "source PKGBUILD 2>/dev/null && echo ${source[@]} $install")))))
+    
+(defun pkgbuild-tar-command ()
+  "Return default tar command"
+  (let* ((tarball-files (pkgbuild-tarball-files))
+	 (dir (car (last (split-string (file-name-directory (buffer-file-name)) "/" t)))))
+    (concat "tar cvzf " dir ".tar.gz -C .. " 
+	    (mapconcat (lambda (l) (concat dir "/" l)) tarball-files " "))))
+
+(defun pkgbuild-tar (command)
+  "Build a tarball containing all required files to build the package."
+  (interactive
+   (if pkgbuild-read-tar-command
+       (list (read-from-minibuffer "tar command: " 
+                                   (pkgbuild-tar-command)
+                                   nil nil '(pkgbuild-tar-history . 1)))
+     (list (pkgbuild-tar-command))))
+  (let (pkgbuild-buffer-name)
+    (save-some-buffers (not pkgbuild-ask-about-save) nil)
+    (or (file-readable-p "PKGBUILD") (error "No PKGBUILD in current directory"))
+    (setq pkgbuild-buffer-name "*tar*")
+    (pkgbuild-process-check pkgbuild-buffer-name)
+    (if (get-buffer pkgbuild-buffer-name)
+        (kill-buffer pkgbuild-buffer-name))
+    (create-file-buffer pkgbuild-buffer-name)
+    (display-buffer pkgbuild-buffer-name)
+    (save-excursion
+      (set-buffer (get-buffer pkgbuild-buffer-name))
+      (goto-char (point-max)))
+    (let ((process
+           (start-process-shell-command "tar" pkgbuild-buffer-name
+                                        command)))
+      (set-process-filter process 'pkgbuild-command-filter))))
+    
+
+(defun pkgbuild-browse-url ()
+  "Vist URL (if defined in PKGBUILD)"
+  (interactive)
+  (if (not (file-readable-p "PKGBUILD")) (error "No PKGBUILD in current directory"))
+  (let ((url (pkgbuild-shell-command-to-string "source PKGBUILD 2>/dev/null && echo -n $url")))
+    (if (string= url "")
+        (message "No URL defined in PKGBUILD") 
+      (browse-url url))))
+
+;;;###autoload
+(define-derived-mode pkgbuild-mode shell-script-mode "PKGBUILD"
+  "Major mode for editing PKGBUILD files. This is much like shell-script-mode mode.
+ Turning on pkgbuild mode calls the value of the variable `pkgbuild-mode-hook'
+with no args, if that value is non-nil."
+  (require 'easymenu)
+  (easy-menu-define pkgbuild-call-menu pkgbuild-mode-map
+                    "Post menu for `pkgbuild-mode'." pkgbuild-mode-menu)
+  (set (make-local-variable 'sh-basic-offset) 2) ;This is what judd uses
+  (sh-set-shell "/bin/bash")
+  (easy-menu-add pkgbuild-mode-menu)
+  ;; This does not work because makepkg requires safed file
+  (add-hook 'local-write-file-hooks 'pkgbuild-update-md5sums-line-hook nil t)
+  (if (= (buffer-size) 0)              
+      (pkgbuild-initialize)
+    (and (pkgbuild-syntax-check) (pkgbuild-source-check))))
+
+(defadvice sh-must-be-shell-mode (around no-check-if-in-pkgbuild-mode activate)
+  "Do not check for shell-mode if major mode is \\[pkgbuild-makepkg]"
+  (if (not (eq major-mode 'pkgbuild-mode)) ;workaround for older shell-scrip-mode versions
+      ad-do-it))                                
+
+(defun pkgbuild-etags (toplevel-directory)
+  "Create TAGS file by running `etags' recursively on the directory tree `pkgbuild-toplevel-directory'.
+  The TAGS file is also immediately visited with `visit-tags-table'."
+  (interactive "DToplevel directory: ")
+  (let* ((etags-file (expand-file-name "TAGS" toplevel-directory)) 
+	 (cmd (format pkgbuild-etags-command toplevel-directory etags-file)))
+    (require 'etags)
+    (message "Running etags to create TAGS file: %s" cmd)
+    (pkgbuild-shell-command cmd)
+    (visit-tags-table etags-file)))
+
+(provide 'pkgbuild-mode)
+
+;;; pkgbuild-mode.el ends here
