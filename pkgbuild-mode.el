@@ -1,5 +1,5 @@
 ;; $Id: pkgbuild-mode.el,v 1.23 2007/10/20 16:02:14 juergen Exp $
-;; Copyright (C) 2005-2007 Juergen Hoetzel
+;; Copyright (C) 2005-2010 Juergen Hoetzel
 
 ;;; License
 
@@ -470,7 +470,7 @@ command."
   (let (line err-p)
     (save-excursion
       (set-buffer buf)
-      (beginning-of-buffer)
+      (goto-char (point-min))
       (if (re-search-forward pkgbuild-bash-error-line-re nil t)
           (progn
             (setq line (string-to-number (match-string 1)))
