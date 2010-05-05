@@ -34,9 +34,7 @@
 ;;; Changelog:
 
 ;; 0.95 
-;; made the calculation of sums generic
-;; defaults to md5sums but supports sha256sums, sha384sums, sha512sums
-;; and sha1sums as well.
+;; made the calculation of sums generic (use makepkg.conf setting)
 
 ;; 0.9
 ;;    fixed `pkgbuild-tar' (empty directory name: thanks Stefan Husmann)
@@ -195,7 +193,7 @@ value of `user-mail-address'."
   :group 'pkgbuild)
 
 (defcustom pkgbuild-sums-command "makepkg -g 2>/dev/null"
-  "shell command to generate sums"
+  "shell command to generate *sums lines"
   :type 'string
   :group 'pkgbuild)
 
@@ -357,9 +355,8 @@ Otherwise, it saves all modified buffers without asking."
       (if (pkgbuild-source-check)       ;all sources available
           (save-excursion 
             (goto-char (point-min))
-            (if (re-search-forward "sums=([^()]*)[ \f\t\r\v]*\n?" (point-max) t) ;sum line exists
-		(progn (setq pkgbuild-hashtype (buffer-substring-no-properties (match-beginning 0) (line-beginning-position 0)))
-		       (delete-region (line-beginning-position 0) (match-end 0))))
+	    (while (re-search-forward "^[[:alnum:]]+sums=([^()]*)[ \f\t\r\v]*\n?" (point-max) t) ;sum line exists
+	      (delete-region (line-beginning-position 0) (match-end 0)))
 	    (goto-char (point-min))
 	    (if (re-search-forward "^source=([^()]*)" (point-max) t)
                 (insert "\n")
