@@ -337,7 +337,7 @@ Otherwise, it saves all modified buffers without asking."
           (save-excursion 
             (goto-char (point-min))
 	    (while (re-search-forward "^[[:alnum:]]+sums=([^()]*)[ \f\t\r\v]*\n?" (point-max) t) ;sum line exists
-	      (delete-region (line-beginning-position 0) (match-end 0)))
+	      (delete-region (match-beginning 0) (match-end 0)))
 	    (goto-char (point-min))
 	    (if (re-search-forward "^source=([^()]*)" (point-max) t)
                 (insert "\n")
