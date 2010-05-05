@@ -324,28 +324,9 @@ Otherwise, it saves all modified buffers without asking."
   "Find file in multible locations"
   (remove-if-not 'file-readable-p (mapcar (lambda (dir) (expand-file-name file dir)) locations)))
 
-(defun pkgbuild-sum (&rest files)
-  (if (not (null files))
-      (let* ((file (car files))
-             (abspath (pkgbuild-find-file file (split-string pkgbuild-source-directory-locations ":"))))
-        (if (null abspath)
-            (error "File %s not found in directories %s" file pkgbuild-source-directory-locations))
-        (cons (car (split-string (pkgbuild-shell-command-to-string (concat pkgbuild-hashtype "sum " (car abspath)))))
-              (apply 'pkgbuild-sum (cdr files))))))
-
-(defun pkgbuild-sums-line (&rest files)
+(defun pkgbuild-sums-line ()
   "calculate *sums=() line in PKGBUILDs"
-  (let ((sums (apply 'pkgbuild-sum files)))
-    (format (concat pkgbuild-hashtype "sums=(%s)") 
-            (apply 'concat (loop 
-                            for item in sums
-                            for position = 0 then (1+ position)
-                            for offset = (% position 2)
-                            collect (cond 
-                                     ((= position 0) (format "'%s'" item))
-                                     ((= offset 0) (format "         '%s'" item))
-                                     ((= offset 1) (format " '%s'%s" item (if (= position (1- (length sums))) "" "\\\n" )))
-                                     (t (error))))))))
+  (pkgbuild-shell-command-to-string pkgbuild-sums-command))
 
 (defun pkgbuild-update-sums-line ()
   "Update the sums line in a PKGBUILD."
@@ -361,8 +342,7 @@ Otherwise, it saves all modified buffers without asking."
 	    (if (re-search-forward "^source=([^()]*)" (point-max) t)
                 (insert "\n")
               (error "Missing source line"))
-            (insert (pkgbuild-trim-right (apply 'pkgbuild-sums-line
-                                                 (split-string (pkgbuild-shell-command-to-string "source PKGBUILD 2>/dev/null && for source in ${source[@]};do echo $source|sed 's|^.*://.*/||g';done"))))))))))
+            (insert (pkgbuild-trim-right (pkgbuild-sums-line))))))))
 
 (defun pkgbuild-about-pkgbuild-mode (&optional arg)
   "About `pkgbuild-mode'."
