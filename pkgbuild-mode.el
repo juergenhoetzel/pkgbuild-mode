@@ -33,7 +33,7 @@
 
 ;;; Changelog:
 
-;; 0.95 
+;; 0.10
 ;; made the calculation of sums generic (use makepkg.conf setting)
 
 ;; 0.9
