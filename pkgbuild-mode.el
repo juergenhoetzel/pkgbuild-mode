@@ -506,8 +506,7 @@ command."
 (defun pkgbuild-browse-url ()
   "Vist URL (if defined in PKGBUILD)"
   (interactive)
-  (if (not (file-readable-p "PKGBUILD")) (error "No PKGBUILD in current directory"))
-  (let ((url (pkgbuild-shell-command-to-string "source PKGBUILD 2>/dev/null && echo -n $url")))
+  (let ((url (pkgbuild-shell-command-to-string (concat (buffer-string) "\nsource /dev/stdin >/dev/null 2>&1 && echo -n $url" ))))
     (if (string= url "")
         (message "No URL defined in PKGBUILD") 
       (browse-url url))))
