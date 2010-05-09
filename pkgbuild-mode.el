@@ -89,7 +89,7 @@
 (require 'sh-script)
 (require 'advice)
 
-(defconst pkgbuild-mode-version "0.9" "Version of `pkgbuild-mode'.")
+(defconst pkgbuild-mode-version "0.10" "Version of `pkgbuild-mode'.")
 
 (defconst pkgbuild-mode-menu
   (purecopy '("PKGBUILD"
