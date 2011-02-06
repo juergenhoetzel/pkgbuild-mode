@@ -120,23 +120,40 @@ pkgname=%s
 pkgver=VERSION
 pkgrel=1 
 pkgdesc=\"\"
+arch=('i686' 'x86_64')
 url=\"\"
-arch=('i686')
 license=('GPL')
+groups=()
 depends=()
 makedepends=()
+optdepends=()
+provides=()
 conflicts=()
 replaces=()
 backup=()
+options=()
 install=
+changelog=
 source=($pkgname-$pkgver.tar.gz)
+noextract=()
 md5sums=()
+
 build() {
   cd $startdir/src/$pkgname-$pkgver
+
   ./configure --prefix=/usr
-  make || return 1
+  make
+}
+
+package() {
+
+  cd $startdir/src/$pkgname-$pkgver
+
   make DESTDIR=$startdir/pkg install
-}"
+}
+
+# vim:set ts=2 sw=2 et:
+"
   "Template for new PKGBUILDs"
   :type 'string
   :group 'pkgbuild)
