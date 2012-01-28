@@ -1,3 +1,5 @@
+;;; pkgbuild-mode.el --- Interface to the ArchLinux package manager
+
 ;; $Id: pkgbuild-mode.el,v 1.23 2007/10/20 16:02:14 juergen Exp $
 ;; Copyright (C) 2005-2010 Juergen Hoetzel
 
@@ -22,7 +24,9 @@
 ;; - namcap/devtools integration
 ;; - use auto-insert
 
-;;; Usage
+;;; Commentary:
+
+;; This package provides an interface to the ArchLinux package manager.
 
 ;; Put this in your .emacs file to enable autoloading of pkgbuild-mode
 ;; and auto-recognition of "PKGBUILD" files:
