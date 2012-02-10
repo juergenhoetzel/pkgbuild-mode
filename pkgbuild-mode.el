@@ -433,6 +433,7 @@ command."
     (set-buffer (process-buffer process))
     (save-excursion
       (goto-char (process-mark process))
+      (comint-watch-for-password-prompt string)
       (insert-before-markers string)
       (set-marker (process-mark process) (point)))))
 
