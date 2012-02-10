@@ -1,3 +1,5 @@
+;;; pkgbuild-mode.el --- Interface to the ArchLinux package manager
+
 ;; $Id: pkgbuild-mode.el,v 1.23 2007/10/20 16:02:14 juergen Exp $
 ;; Copyright (C) 2005-2010 Juergen Hoetzel
 
@@ -22,7 +24,9 @@
 ;; - namcap/devtools integration
 ;; - use auto-insert
 
-;;; Usage
+;;; Commentary:
+
+;; This package provides an interface to the ArchLinux package manager.
 
 ;; Put this in your .emacs file to enable autoloading of pkgbuild-mode
 ;; and auto-recognition of "PKGBUILD" files:
@@ -38,10 +42,10 @@
 
 ;; 0.9
 ;;    fixed `pkgbuild-tar' (empty directory name: thanks Stefan Husmann)
-;;    new custom variable: pkgbuild-template 
+;;    new custom variable: pkgbuild-template
 ;;    code cleanup
 
-;; 0.8 
+;; 0.8
 ;;    added `pkgbuild-shell-command' and
 ;;      `pkgbuild-shell-command-to-string' (required to always use
 ;;      "/bin/bash" when calling shell functions, which create new
@@ -53,11 +57,11 @@
 
 
 ;; 0.6
-;;    New interactive function pkgbuild-etags (C-c C-e) 
+;;    New interactive function pkgbuild-etags (C-c C-e)
 ;;      create tags table for all PKGBUILDs in your source tree, so you
-;;      can search PKGBUILDs by pkgname. Customize your tags-table-list 
-;;      to include the TAGS file in your source tree. 
-;;    changed default  makepkg-command (disabled ANSI colors in emacs TERM) 
+;;      can search PKGBUILDs by pkgname. Customize your tags-table-list
+;;      to include the TAGS file in your source tree.
+;;    changed default  makepkg-command (disabled ANSI colors in emacs TERM)
 ;;    set default indentation to 2
 
 
@@ -75,7 +79,7 @@
 
 
 ;; 0.3
-;;   Update md5sums line when saving PKGBUILD 
+;;   Update md5sums line when saving PKGBUILD
 ;;     (Can be disabled via custom variable [pkgbuild-update-md5sums-on-save])
 ;;   New interactive function pkgbuild-tar to create Source Tarball (C-c C-a)
 ;;     (Usefull for AUR uploads)
@@ -116,9 +120,9 @@
 (defcustom pkgbuild-template
 "# $Id: pkgbuild-mode.el,v 1.23 2007/10/20 16:02:14 juergen Exp $
 # Maintainer: %s <%s>
-pkgname=%s  
+pkgname=%s
 pkgver=VERSION
-pkgrel=1 
+pkgrel=1
 pkgdesc=\"\"
 arch=('i686' 'x86_64')
 url=\"\"
@@ -258,7 +262,7 @@ Otherwise, it saves all modified buffers without asking."
 
 (defun pkgbuild-trim-right (str)        ;Helper function
   "Trim whitespace from end of the string"
-  (if (string-match "[ \f\t\n\r\v]+$" str -1) 
+  (if (string-match "[ \f\t\n\r\v]+$" str -1)
       (pkgbuild-trim-right (substring str 0 -1))
     str))
 
@@ -276,7 +280,7 @@ Otherwise, it saves all modified buffers without asking."
           l)
       nil)))
 
-(defun pkgbuild-source-locations() 
+(defun pkgbuild-source-locations()
   "find source regions"
   (delete-if (lambda (region) (= (car region) (cdr region))) (loop for item on (pkgbuild-source-points) by 'cddr collect (cons (car item) (cadr item)))))
 
@@ -289,33 +293,33 @@ Otherwise, it saves all modified buffers without asking."
   "same as `shell-command' always uses '/bin/bash'"
   (let ((shell-file-name "/bin/bash"))
     (shell-command COMMAND OUTPUT-BUFFER ERROR-BUFFER)))
-  
+
 (defun pkgbuild-source-check ()
   "highlight sources not available. Return true if all sources are available. This does not work if globbing returns multiple files"
   (interactive)
-  (save-excursion 
+  (save-excursion
     (goto-char (point-min))
     (pkgbuild-delete-all-overlays)
     (if (search-forward-regexp "^\\s-*source=(\\([^()]*\\))" (point-max) t)
         (let ((all-available t)
               (sources (split-string (pkgbuild-shell-command-to-string "source PKGBUILD 2>/dev/null && for source in ${source[@]};do echo $source|sed 's|^.*://.*/||g';done")))
               (source-locations (pkgbuild-source-locations)))
-          (if (= (length sources) (length source-locations)) 
+          (if (= (length sources) (length source-locations))
               (progn
                 (loop for source in sources
                       for source-location in source-locations
                       do (when (not (pkgbuild-find-file source (split-string pkgbuild-source-directory-locations ":")))
-                           (progn 
+                           (progn
                              (setq all-available nil)
                              (pkgbuild-make-overlay (car source-location) (cdr source-location)))))
                 all-available)
             (progn
               (message "cannot verfify sources: don't use globbing %d/%d" (length sources) (length source-locations))
               nil)))
-      (progn 
+      (progn
         (message "no source line found")
         nil))))
-      
+
 (defun pkgbuild-delete-all-overlays ()
   "Delete all the overlays used by pkgbuild-mode."
   (interactive)                         ;test
@@ -351,7 +355,7 @@ Otherwise, it saves all modified buffers without asking."
   (if (not (file-readable-p "PKGBUILD")) (error "Missing PKGBUILD")
     (if (not (pkgbuild-syntax-check)) (error "Syntax Error")
       (if (pkgbuild-source-check)       ;all sources available
-          (save-excursion 
+          (save-excursion
             (goto-char (point-min))
 	    (while (re-search-forward "^[[:alnum:]]+sums=([^()]*)[ \f\t\r\v]*\n?" (point-max) t) ;sum line exists
 	      (delete-region (match-beginning 0) (match-end 0)))
@@ -382,8 +386,8 @@ Otherwise, it saves all modified buffers without asking."
   "Create a default pkgbuild if one does not exist or is empty."
   (interactive)
   (insert (format pkgbuild-template
-		  pkgbuild-user-full-name 
-		  pkgbuild-user-mail-address 
+		  pkgbuild-user-full-name
+		  pkgbuild-user-mail-address
 		  (or (pkgbuild-get-directory (buffer-file-name)) "NAME"))))
 
 (defun pkgbuild-process-check (buffer)
@@ -404,7 +408,7 @@ command."
   "Build this package."
   (interactive
    (if pkgbuild-read-makepkg-command
-       (list (read-from-minibuffer "makepkg command: " 
+       (list (read-from-minibuffer "makepkg command: "
                                    (eval pkgbuild-makepkg-command)
                                    nil nil '(pkgbuild-makepkg-history . 1)))
      (list (eval pkgbuild-makepkg-command))))
@@ -419,7 +423,7 @@ command."
         (save-excursion
           (set-buffer (get-buffer pkgbuild-buffer-name))
           (if (fboundp 'compilation-mode) (compilation-mode pkgbuild-buffer-name))
-          (if buffer-read-only (toggle-read-only)) 
+          (if buffer-read-only (toggle-read-only))
           (goto-char (point-max)))
         (let ((process
                (start-process-shell-command "makepkg" pkgbuild-buffer-name
@@ -457,7 +461,7 @@ command."
         (stdout-buffer (concat "*PKGBUILD(" (pkgbuild-get-directory (buffer-file-name)) ") stdout*")))
     (if (get-buffer stderr-buffer) (kill-buffer stderr-buffer))
     (if (get-buffer stdout-buffer) (kill-buffer stdout-buffer))
-    (if (not (equal 
+    (if (not (equal
               (flet ((message (arg &optional args) nil)) ;Hack disable empty output
                 (pkgbuild-shell-command "source PKGBUILD" stdout-buffer stderr-buffer))
               0))
@@ -480,26 +484,26 @@ command."
             ; (pkgbuild-highlight-line line) TODO
             (setq err-p t)))
       (values err-p line))))
-  
+
 (defun pkgbuild-tarball-files ()
   "Return a list of required files for the tarball package"
   (cons "PKGBUILD"
 	(remove-if (lambda (x) (string-match "^\\(https?\\|ftp\\)://" x))
-		   (split-string (pkgbuild-shell-command-to-string 
+		   (split-string (pkgbuild-shell-command-to-string
 				  "source PKGBUILD 2>/dev/null && echo ${source[@]} $install")))))
-    
+
 (defun pkgbuild-tar-command ()
   "Return default tar command"
   (let* ((tarball-files (pkgbuild-tarball-files))
 	 (dir (car (last (split-string (file-name-directory (buffer-file-name)) "/" t)))))
-    (concat "tar cvzf " dir ".tar.gz -C .. " 
+    (concat "tar cvzf " dir ".tar.gz -C .. "
 	    (mapconcat (lambda (l) (concat dir "/" l)) tarball-files " "))))
 
 (defun pkgbuild-tar (command)
   "Build a tarball containing all required files to build the package."
   (interactive
    (if pkgbuild-read-tar-command
-       (list (read-from-minibuffer "tar command: " 
+       (list (read-from-minibuffer "tar command: "
                                    (pkgbuild-tar-command)
                                    nil nil '(pkgbuild-tar-history . 1)))
      (list (pkgbuild-tar-command))))
@@ -519,14 +523,14 @@ command."
            (start-process-shell-command "tar" pkgbuild-buffer-name
                                         command)))
       (set-process-filter process 'pkgbuild-command-filter))))
-    
+
 
 (defun pkgbuild-browse-url ()
   "Vist URL (if defined in PKGBUILD)"
   (interactive)
   (let ((url (pkgbuild-shell-command-to-string (concat (buffer-string) "\nsource /dev/stdin >/dev/null 2>&1 && echo -n $url" ))))
     (if (string= url "")
-        (message "No URL defined in PKGBUILD") 
+        (message "No URL defined in PKGBUILD")
       (browse-url url))))
 
 ;;;###autoload
@@ -542,20 +546,20 @@ with no args, if that value is non-nil."
   (easy-menu-add pkgbuild-mode-menu)
   ;; This does not work because makepkg requires safed file
   (add-hook 'local-write-file-hooks 'pkgbuild-update-sums-line-hook nil t)
-  (if (= (buffer-size) 0)              
+  (if (= (buffer-size) 0)
       (pkgbuild-initialize)
     (and (pkgbuild-syntax-check) (pkgbuild-source-check))))
 
 (defadvice sh-must-be-shell-mode (around no-check-if-in-pkgbuild-mode activate)
   "Do not check for shell-mode if major mode is \\[pkgbuild-makepkg]"
   (if (not (eq major-mode 'pkgbuild-mode)) ;workaround for older shell-scrip-mode versions
-      ad-do-it))                                
+      ad-do-it))
 
 (defun pkgbuild-etags (toplevel-directory)
   "Create TAGS file by running `etags' recursively on the directory tree `pkgbuild-toplevel-directory'.
   The TAGS file is also immediately visited with `visit-tags-table'."
   (interactive "DToplevel directory: ")
-  (let* ((etags-file (expand-file-name "TAGS" toplevel-directory)) 
+  (let* ((etags-file (expand-file-name "TAGS" toplevel-directory))
 	 (cmd (format pkgbuild-etags-command toplevel-directory etags-file)))
     (require 'etags)
     (message "Running etags to create TAGS file: %s" cmd)
