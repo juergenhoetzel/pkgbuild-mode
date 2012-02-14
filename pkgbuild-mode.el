@@ -414,7 +414,7 @@ command."
         (pkgbuild-process-check pkgbuild-buffer-name)
         (if (get-buffer pkgbuild-buffer-name)
             (kill-buffer pkgbuild-buffer-name))
-        (create-file-buffer pkgbuild-buffer-name)
+        (get-buffer-create pkgbuild-buffer-name)
         (display-buffer pkgbuild-buffer-name)
         (save-excursion
           (set-buffer (get-buffer pkgbuild-buffer-name))
