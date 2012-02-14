@@ -88,6 +88,7 @@
 (require 'cl)
 (require 'sh-script)
 (require 'advice)
+(require 'compile)
 
 (defconst pkgbuild-mode-version "0.10" "Version of `pkgbuild-mode'.")
 
@@ -416,11 +417,9 @@ command."
             (kill-buffer pkgbuild-buffer-name))
         (get-buffer-create pkgbuild-buffer-name)
         (display-buffer pkgbuild-buffer-name)
-        (save-excursion
-          (set-buffer (get-buffer pkgbuild-buffer-name))
-          (if (fboundp 'compilation-mode) (compilation-mode pkgbuild-buffer-name))
-          (if buffer-read-only (toggle-read-only)) 
-          (goto-char (point-max)))
+	(with-current-buffer pkgbuild-buffer-name
+	  (compilation-mode)
+	  (toggle-read-only -1))
         (let ((process
                (start-process-shell-command "makepkg" pkgbuild-buffer-name
                                             command)))
