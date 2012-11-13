@@ -33,6 +33,9 @@
 
 ;;; Changelog:
 
+;; 0.11.4
+;; pkgbuild-read-makepkg-command: more sane default
+;; 
 ;; 0.11.3
 ;; throw away all code regarding source-taurball-creation, use makepkg --source for that instead
 
@@ -558,7 +561,7 @@ the placeholder for the toplevel directory and tagsfile"
   :type 'boolean
   :group 'pkgbuild)
 
-(defcustom pkgbuild-read-makepkg-command n
+(defcustom pkgbuild-read-makepkg-command nil
   "*Non-nil means \\[pkgbuild-makepkg] reads the makepkg command to use.
 Otherwise, \\[pkgbuild-makepkg] just uses the value of `pkgbuild-makepkg-command'."
   :type 'boolean
