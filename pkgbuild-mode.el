@@ -126,7 +126,7 @@
 ;; Local variables
 
 (defgroup pkgbuild nil
-  "pkgbuild mode (ArchLinux Packages)."
+  "pkgbuild mode (Arch Linux Packages)."
   :prefix "pkgbuild-"
   :group 'languages)
 
