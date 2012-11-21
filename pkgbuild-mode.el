@@ -150,7 +150,7 @@ md5sums=()
 build() {
   cd $srcdir/$pkgname-$pkgver
   ./configure --prefix=/usr
-  make || return 1
+  make 
   make DESTDIR=$pkgdir install
 }"
   "Template for new generic PKGBUILDs"
