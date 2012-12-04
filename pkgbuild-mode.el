@@ -32,42 +32,42 @@
 ;;                                auto-mode-alist))
 
 ;;; Changelog:
-
+;; 0.11.5
+;; redefine some shortcuts 
+;;
 ;; 0.11.4
 ;; pkgbuild-read-makepkg-command: more sane default
 ;; 
 ;; 0.11.3
 ;; throw away all code regarding source-taurball-creation, use makepkg --source for that instead
-
+;;
 ;; 0.11.2
 ;; fix creation of tarfiles if the source-URL uses syntax to save the 
 ;; downloaded file under another name, useful e.g. to add a version number
-
+;;
 ;; 0.11.1
 ;; more templates, some minor code cosmetics
-
+;;
 ;; 0.10.1
 ;; Use more sane defaults in PKGBUILD skel
-
+;;
 ;; 0.10
 ;; made the calculation of sums generic (use makepkg.conf setting)
-
+;;
 ;; 0.9
 ;;    fixed `pkgbuild-tar' (empty directory name: thanks Stefan Husmann)
 ;;    new custom variable: pkgbuild-template 
 ;;    code cleanup
-
+;;
 ;; 0.8 
 ;;    added `pkgbuild-shell-command' and
 ;;      `pkgbuild-shell-command-to-string' (required to always use
 ;;      "/bin/bash" when calling shell functions, which create new
 ;;      buffers)
-
-
+;;
 ;; 0.7 make shell-file-name buffer-local set to "/bin/bash" (required
 ;; to parse PKGBUILDs)
-
-
+;;
 ;; 0.6
 ;;    New interactive function pkgbuild-etags (C-c C-e) 
 ;;      create tags table for all PKGBUILDs in your source tree, so you
@@ -75,22 +75,19 @@
 ;;      to include the TAGS file in your source tree. 
 ;;    changed default  makepkg-command (disabled ANSI colors in emacs TERM) 
 ;;    set default indentation to 2
-
-
+;;
 ;; 0.5
 ;;    New interactive function pkgbuild-browse-url to visit project's website (C-c C-u).
 ;;      Customize your browse-url-browser-function
 ;;    emacs 22 (cvs snapshot) compatibility: ensure makepkg buffer is not read-only
-
-
+;;
 ;; 0.4
 ;;    handle source parse errors when updating md5sums and opening PKGBUILDs
 ;;    only update md5sums if all sources are available
 ;;    code cleanup
 ;;    highlight sources not available when trying to update md5sums and opening PKGBUILDs 
 ;;    (this does not work when globbing returns multiple filenames)
-
-
+;;
 ;; 0.3
 ;;   Update md5sums line when saving PKGBUILD 
 ;;     (Can be disabled via custom variable [pkgbuild-update-md5sums-on-save])
@@ -649,9 +646,9 @@ Otherwise, it saves all modified buffers without asking."
 (unless pkgbuild-mode-map               ; Do not change the keymap if it is already set up.
   (setq pkgbuild-mode-map (make-sparse-keymap))
   (define-key pkgbuild-mode-map "\C-c\C-r" 'pkgbuild-increase-release-tag)
-  (define-key pkgbuild-mode-map "\C-c\C-b" 'pkgbuild-makepkg)
+  (define-key pkgbuild-mode-map "\C-c\C-c" 'pkgbuild-makepkg)
   (define-key pkgbuild-mode-map "\C-c\C-a" 'pkgbuild-tar)
-  (define-key pkgbuild-mode-map "\C-c\C-u" 'pkgbuild-browse-url)
+  (define-key pkgbuild-mode-map "\C-c\C-b" 'pkgbuild-browse-url)
   (define-key pkgbuild-mode-map "\C-c\C-m" 'pkgbuild-update-sums-line)
   (define-key pkgbuild-mode-map "\C-c\C-e" 'pkgbuild-etags)
   (define-key pkgbuild-mode-map "\C-c\C-i" 'pkgbuild-install-file-initialize)
