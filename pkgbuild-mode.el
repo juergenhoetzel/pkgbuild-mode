@@ -32,6 +32,9 @@
 ;;                                auto-mode-alist))
 
 ;;; Changelog:
+;; 0.11.6
+;; new pacman 4.1 compliant VCS templates (git, bzr, svn, mercurial. Missing: cvs, darcs)
+;;
 ;; 0.11.5
 ;; redefine some shortcuts 
 ;;
@@ -197,43 +200,24 @@ replaces=()
 backup=()
 options=()
 install=
-source=()
+source=(\"BZRURL\")
 noextract=()
-md5sums=()
+md5sums=('SKIP')
 
-_bzrtrunk=\"BZRURL\"
-_bzrmod=\"MODENAME\"
+pkgver() {
+  cd $srcdir/$_bzrmod
+  bzr revno
+}
 
 build() {
-  cd \"$srcdir\"
-  msg \"Connecting to Bazaar server...\"
-
-  if [[ -d $_bzrmod/.bzr ]]; then
-    (cd $_bzrmod && bzr update -v && cd ..)
-    msg \"Local checkout updated or server timeout\"
-  else
-    bzr co --lightweight -v $_bzrtrunk $_bzrmod
-    msg \"Checkout done or server timeout\"
-  fi
-  
-  msg \"Bazaar checkout done or server timeout\"
-  msg \"Starting make...\"
-
-  [ -d \"$srcdir/$_bzrmod-build\" ] && rm -rf \"$srcdir/$_bzrmod-build\"
-  cp -r \"$srcdir/$_bzrmod\" \"$srcdir/$_bzrmod-build\"
-  cd \"$srcdir/$_bzrmod-build\"
-
-  #
-  # BUILD HERE
-  #
-
+  cd $srcdir/$_bzrmod
   ./autogen.sh
   ./configure --prefix=/usr
   make
 }
 
 package() {
-  cd \"$srcdir/$_bzrmod-build\"
+  cd \"$srcdir/$_bzrmod"
   make DESTDIR=\"$pkgdir/\" install
 }"
   "Template for new PKGBUILDs to build from bzr sources"
@@ -258,41 +242,37 @@ replaces=()
 backup=()
 options=()
 install=
-source=()
+source=(\"GITURL\"w)
 noextract=()
-md5sums=()
-
-_gitroot=\"GITURL\"
+md5sums=('SKIP')
 _gitname=\"MODENAME\"
+
+#uncomment and choose one of the following pkgver functions
+#date of latest commit
+#pkgver() {
+#  cd "$srcdir"/$_gitname
+#  echo $(git log -1 --format="%cd" --date=short | sed 's|-||g')
+#}
+#with tags
+#pkgver() {
+#  cd "$srcdir"/local_repo
+#  git describe --always | sed 's|-|.|g'
+#}
+#without tags
+#pkgver() {
+#  cd "$srcdir"/local_repo
+#  echo "0.$(git rev-list --count HEAD).$(git describe --always)"
+#}
+
 build() {
-  cd \"$srcdir\"
-  msg \"Connecting to GIT server...\"
-
-  if [ -d $_gitname ] ; then
-    cd $_gitname && git pull origin
-    msg \"The local files are updated.\"
-  else
-    git clone $_gitroot $_gitname
-  fi
-
-  msg \"GIT checkout done or server timeout\"
-  msg \"Starting make...\"
-
-  [ -d \"$srcdir/$_gitname-build\" ] && rm -rf \"$srcdir/$_gitname-build\"
-  git clone \"$srcdir/$_gitname\" \"$srcdir/$_gitname-build\"
-  cd \"$srcdir/$_gitname-build\"
-
-  #
-  # BUILD HERE
-  #
-
+  cd \"$srcdir/$_gitname"
   ./autogen.sh
   ./configure --prefix=/usr
   make
 }
 
 package() {
-  cd \"$srcdir/$_gitname-build\"
+  cd \"$srcdir/$_gitname"
   make DESTDIR=\"$pkgdir/\" install
 }"
   "Template for new PKGBUILDs to build from git sources"
@@ -317,39 +297,25 @@ replaces=()
 backup=()
 options=()
 install=
-source=()
+source=(\"SVNURL\")
 noextract=()
-md5sums=()
-
-_svntrunk=\"SVNURL\"
+md5sums=('SKIP')
 _svnmod=\"MODENAME\"
 
+pkgver() {
+  cd "$SRCDEST"/$_svnmod
+  svnversion
+}
+
 build() {
-  cd \"$srcdir\"
-
-  if [ -d $_svnmod/.svn ]; then
-    (cd $_svnmod && svn up -r $pkgver)
-  else
-    svn co $_svntrunk --config-dir ./ -r $pkgver $_svnmod
-  fi
-
-  msg \"SVN checkout done or server timeout\"
-  msg \"Starting make...\"
-
-  [ -d \"$srcdir/$_svnmod-build\" ] && rm -rf \"$srcdir/$_svnmod-build\"
-  cp -r \"$srcdir/$_svnmod\" \"$srcdir/$_svnmod-build\"
-  cd \"$srcdir/$_svnmod-build\"
-
-  #
-  # BUILD
-  #
+  cd \"$srcdir/$_svnmod"
   ./autogen.sh
   ./configure --prefix=/usr
   make
 }
 
 package() {
-  cd \"$srcdir/$_svnmod-build\"
+  cd \"$srcdir/$_svnmod"
   make DESTDIR=\"$pkgdir/\" install
 }"
   "Template for new PKGBUILDs to build from svn sources"
@@ -374,35 +340,18 @@ replaces=()
 backup=()
 options=()
 install=
-source=()
+source=(\"HGURL\")
 noextract=()
 md5sums=()
-
-_hgroot=\"HGURL\"
 _hgrepo=\"MODENAME\"
 
+pkgver() {
+  cd "$srcdir"/local_repo
+  hg identify -ni | awk 'BEGIN{OFS=".";} {print $2,$1}'
+}
+
 build() {
-  cd \"$srcdir\"
-  msg \"Connecting to Mercurial server...\"
-
-  if [ -d $_hgrepo ] ; then
-    cd $_hgrepo
-    hg pull -u
-    msg \"The local files are updated.\"
-  else
-    hg clone $_hgroot $_hgrepo
-  fi
-
-  msg \"Mercurial checkout done or server timeout\"
-  msg \"Starting make...\"
-
-  [ -d \"$srcdir/$_hgrepo-build\" ] && rm -rf \"$srcdir/$_hgrepo-build\"
-  cp -r \"$srcdir/$_hgrepo\" \"$srcdir/$_hgrepo-build\"
-  cd \"$srcdir/$_hgrepo-build\"
-
-  #
-  # BUILD HERE
-  #
+  cd \"$srcdir/$_hgrepo"
 
   ./autogen.sh
   ./configure --prefix=/usr
@@ -410,7 +359,7 @@ build() {
 }
 
 package() {
-  cd \"$srcdir/$_hgrepo-build\"
+  cd \"$srcdir/$_hgrepo"
   make DESTDIR=\"$pkgdir/\" install
 }"
   "Template for new PKGBUILDs to build from mercurial sources"
