@@ -251,7 +251,7 @@ _gitname=\"MODENAME\"
 #date of latest commit
 #pkgver() {
 #  cd $srcdir/$_gitname
-#  echo $(git log -1 --format="%cd" --date=short | sed 's|-||g')
+#  echo $(git log -1 --format=\"%cd\" --date=short | sed 's|-||g')
 #}
 #with tags
 #pkgver() {
@@ -265,14 +265,14 @@ _gitname=\"MODENAME\"
 #}
 
 build() {
-  cd \"$srcdir/$_gitname"
+  cd \"$srcdir/$_gitname\"
   ./autogen.sh
   ./configure --prefix=/usr
   make
 }
 
 package() {
-  cd \"$srcdir/$_gitname"
+  cd \"$srcdir/$_gitname\"
   make DESTDIR=\"$pkgdir/\" install
 }"
   "Template for new PKGBUILDs to build from git sources"
@@ -303,19 +303,19 @@ md5sums=('SKIP')
 _svnmod=\"MODENAME\"
 
 pkgver() {
-  cd "$SRCDEST"/$_svnmod
+  cd $SRCDEST/$_svnmod
   svnversion
 }
 
 build() {
-  cd \"$srcdir/$_svnmod"
+  cd \"$srcdir/$_svnmod\"
   ./autogen.sh
   ./configure --prefix=/usr
   make
 }
 
 package() {
-  cd \"$srcdir/$_svnmod"
+  cd \"$srcdir/$_svnmod\"
   make DESTDIR=\"$pkgdir/\" install
 }"
   "Template for new PKGBUILDs to build from svn sources"
@@ -346,12 +346,12 @@ md5sums=()
 _hgrepo=\"MODENAME\"
 
 pkgver() {
-  cd "$srcdir"/local_repo
-  hg identify -ni | awk 'BEGIN{OFS=".";} {print $2,$1}'
+  cd \"$srcdir\"/local_repo
+  hg identify -ni | awk 'BEGIN{OFS=\".\";} {print $2,$1}'
 }
 
 build() {
-  cd \"$srcdir/$_hgrepo"
+  cd \"$srcdir/$_hgrepo\"
 
   ./autogen.sh
   ./configure --prefix=/usr
@@ -359,7 +359,7 @@ build() {
 }
 
 package() {
-  cd \"$srcdir/$_hgrepo"
+  cd \"$srcdir/$_hgrepo\"
   make DESTDIR=\"$pkgdir/\" install
 }"
   "Template for new PKGBUILDs to build from mercurial sources"
