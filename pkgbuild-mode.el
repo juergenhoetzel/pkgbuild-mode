@@ -242,7 +242,7 @@ replaces=()
 backup=()
 options=()
 install=
-source=(\"GITURL\"w)
+source=(\"GITURL\")
 noextract=()
 md5sums=('SKIP')
 _gitname=\"MODENAME\"
@@ -250,18 +250,18 @@ _gitname=\"MODENAME\"
 #uncomment and choose one of the following pkgver functions
 #date of latest commit
 #pkgver() {
-#  cd "$srcdir"/$_gitname
+#  cd $srcdir/$_gitname
 #  echo $(git log -1 --format="%cd" --date=short | sed 's|-||g')
 #}
 #with tags
 #pkgver() {
-#  cd "$srcdir"/local_repo
+#  cd $srcdir/$_gitname
 #  git describe --always | sed 's|-|.|g'
 #}
 #without tags
 #pkgver() {
-#  cd "$srcdir"/local_repo
-#  echo "0.$(git rev-list --count HEAD).$(git describe --always)"
+#  cd $srcdir/$_gitname
+#  echo \"0.$(git rev-list --count HEAD).$(git describe --always)\"
 #}
 
 build() {
