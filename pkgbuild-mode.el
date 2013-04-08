@@ -217,7 +217,7 @@ build() {
 }
 
 package() {
-  cd \"$srcdir/$_bzrmod"
+  cd \"$srcdir/$_bzrmod\"
   make DESTDIR=\"$pkgdir/\" install
 }"
   "Template for new PKGBUILDs to build from bzr sources"
