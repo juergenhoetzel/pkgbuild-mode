@@ -32,6 +32,9 @@
 ;;                                auto-mode-alist))
 
 ;;; Changelog:
+;; 0.11.7 
+;; really fix the point brougt up with 0.11.2
+;;
 ;; 0.11.6
 ;; new pacman 4.1 compliant VCS templates (git, bzr, svn, mercurial. Missing: cvs, darcs)
 ;;
@@ -632,7 +635,8 @@ Otherwise, it saves all modified buffers without asking."
     (pkgbuild-delete-all-overlays)
     (if (search-forward-regexp "^\\s-*source=(\\([^()]*\\))" (point-max) t)
         (let ((all-available t)
-              (sources (split-string (pkgbuild-shell-command-to-string "source PKGBUILD 2>/dev/null && for source in ${source[@]};do echo $source|sed 's|^.*://.*/||g';done")))
+              (sources (split-string (pkgbuild-shell-command-to-string 
+				      "source PKGBUILD 2>/dev/null && for source in ${source[@]};do echo $source|sed 's+::+@+|cut -d @ -f1 |sed 's|^.*://.*/||g';done")))
               (source-locations (pkgbuild-source-locations)))
           (if (= (length sources) (length source-locations)) 
               (progn
