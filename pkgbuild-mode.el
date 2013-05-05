@@ -636,7 +636,7 @@ Otherwise, it saves all modified buffers without asking."
     (if (search-forward-regexp "^\\s-*source=(\\([^()]*\\))" (point-max) t)
         (let ((all-available t)
               (sources (split-string (pkgbuild-shell-command-to-string 
-				      "source PKGBUILD 2>/dev/null && for source in ${source[@]};do echo $source|sed 's+::+@+|cut -d @ -f1 |sed 's|^.*://.*/||g';done")))
+				      "source PKGBUILD && for source in ${source[@]};do echo $source|sed 's+::+@+'|cut -d @ -f1 |sed 's|^.*://.*/||g';done")))
               (source-locations (pkgbuild-source-locations)))
           (if (= (length sources) (length source-locations)) 
               (progn
