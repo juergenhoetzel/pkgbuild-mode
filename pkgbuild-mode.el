@@ -304,12 +304,15 @@ Otherwise, it saves all modified buffers without asking."
     (if (search-forward-regexp "^\\s-*source=(\\([^()]*\\))" (point-max) t)
         (let ((all-available t)
               (sources (split-string (pkgbuild-shell-command-to-string "source PKGBUILD 2>/dev/null && for source in ${source[@]};do echo $source|sed 's|^.*://.*/||g';done")))
+              (sources-renamed (split-string (pkgbuild-shell-command-to-string "source PKGBUILD 2>/dev/null && for source in ${source[@]};do echo $source|sed 's|::.*://.*||g';done")))
               (source-locations (pkgbuild-source-locations)))
           (if (= (length sources) (length source-locations))
               (progn
-                (loop for source in sources
+                (loop for source in sources 
+                      for source-renamed in sources-renamed
                       for source-location in source-locations
-                      do (when (not (pkgbuild-find-file source (split-string pkgbuild-source-directory-locations ":")))
+                      do (when (and (not (pkgbuild-find-file source (split-string pkgbuild-source-directory-locations ":")))
+                                    (not (pkgbuild-find-file source-renamed (split-string pkgbuild-source-directory-locations ":"))))
                            (progn
                              (setq all-available nil)
                              (pkgbuild-make-overlay (car source-location) (cdr source-location)))))
