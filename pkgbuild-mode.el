@@ -389,7 +389,7 @@ Otherwise, it saves all modified buffers without asking."
   (insert (format pkgbuild-template
 		  pkgbuild-user-full-name
 		  pkgbuild-user-mail-address
-		  (or (pkgbuild-get-directory (buffer-file-name)) "NAME"))))
+		  (or (buffer-file-name) "NAME"))))
 
 (defun pkgbuild-process-check (buffer)
   "Check if BUFFER has a running process.
@@ -402,9 +402,6 @@ command."
             (delete-process process)
           (error "Cannot run two simultaneous processes ...")))))
 
-(defun pkgbuild-get-directory (buffer-file-name)
-    (car (last (split-string (file-name-directory (buffer-file-name)) "/" t))))
-
 (defun pkgbuild-makepkg (command)
   "Build this package."
   (interactive
@@ -415,7 +412,7 @@ command."
      (list (eval pkgbuild-makepkg-command))))
   (save-some-buffers (not pkgbuild-ask-about-save) nil)
   (if (file-readable-p "PKGBUILD")
-      (let ((pkgbuild-buffer-name (concat "*"  command " " (pkgbuild-get-directory buffer-file-name)  "*")))
+      (let ((pkgbuild-buffer-name (concat "*"  command " " buffer-file-name  "*")))
         (pkgbuild-process-check pkgbuild-buffer-name)
         (if (get-buffer pkgbuild-buffer-name)
             (kill-buffer pkgbuild-buffer-name))
@@ -456,8 +453,8 @@ command."
   "evaluate PKGBUILD and search stderr for errors"
   (interactive)
   (let  (
-         (stderr-buffer (concat "*PKGBUILD(" (pkgbuild-get-directory (buffer-file-name)) ") stderr*"))
-        (stdout-buffer (concat "*PKGBUILD(" (pkgbuild-get-directory (buffer-file-name)) ") stdout*")))
+         (stderr-buffer (concat "*PKGBUILD(" (buffer-file-name) ") stderr*"))
+	 (stdout-buffer (concat "*PKGBUILD(" (buffer-file-name) ") stdout*")))
     (if (get-buffer stderr-buffer) (kill-buffer stderr-buffer))
     (if (get-buffer stdout-buffer) (kill-buffer stdout-buffer))
     (if (not (equal
