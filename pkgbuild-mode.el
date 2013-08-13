@@ -513,7 +513,7 @@ command."
       (set-buffer (get-buffer pkgbuild-buffer-name))
       (goto-char (point-max)))
     (let ((process
-           (start-process-shell-command "tar" pkgbuild-buffer-name
+           (start-file-process-shell-command "tar" pkgbuild-buffer-name
                                         command)))
       (set-process-filter process 'pkgbuild-command-filter))))
 
