@@ -37,6 +37,11 @@
 
 ;;; Changelog:
 
+;; 0.11
+;; Support Sources renaming: https://wiki.archlinux.org/index.php/PKGBUILD#source
+;; Use directory name as default pkgname
+;; Support Tramp (PKGBUILDs on remote machines)
+
 ;; 0.10
 ;; made the calculation of sums generic (use makepkg.conf setting)
 
@@ -94,7 +99,7 @@
 (require 'advice)
 (require 'compile)
 
-(defconst pkgbuild-mode-version "0.10" "Version of `pkgbuild-mode'.")
+(defconst pkgbuild-mode-version "0.11" "Version of `pkgbuild-mode'.")
 
 (defconst pkgbuild-mode-menu
   (purecopy '("PKGBUILD"
