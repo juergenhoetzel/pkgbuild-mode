@@ -381,7 +381,8 @@ Otherwise, it saves all modified buffers without asking."
   (insert (format pkgbuild-template
 		  pkgbuild-user-full-name
 		  pkgbuild-user-mail-address
-		  (or (buffer-file-name) "NAME"))))
+		  (or (substring (file-relative-name (file-name-directory buffer-file-name) "..") 0 -1)
+		      NAME))))
 
 (defun pkgbuild-process-check (buffer)
   "Check if BUFFER has a running process.
