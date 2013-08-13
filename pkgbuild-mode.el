@@ -285,16 +285,6 @@ Otherwise, it saves all modified buffers without asking."
   "find source regions"
   (delete-if (lambda (region) (= (car region) (cdr region))) (loop for item on (pkgbuild-source-points) by 'cddr collect (cons (car item) (cadr item)))))
 
-(defun pkgbuild-shell-command-to-string(COMMAND)
-  "same as `shell-command-to-string' always uses '/bin/bash'"
-  (let ((shell-file-name "/bin/bash"))
-    (shell-command-to-string COMMAND)))
-
-(defun pkgbuild-shell-command (COMMAND &optional OUTPUT-BUFFER ERROR-BUFFER)
-  "same as `shell-command' always uses '/bin/bash'"
-  (let ((shell-file-name "/bin/bash"))
-    (shell-command COMMAND OUTPUT-BUFFER ERROR-BUFFER)))
-
 (defun pkgbuild-source-check ()
   "highlight sources not available. Return true if all sources are available. This does not work if globbing returns multiple files"
   (interactive)
@@ -303,7 +293,9 @@ Otherwise, it saves all modified buffers without asking."
     (pkgbuild-delete-all-overlays)
     (if (search-forward-regexp "^\\s-*source=(\\([^()]*\\))" (point-max) t)
         (let ((all-available t)
-              (sources (split-string (pkgbuild-shell-command-to-string "source PKGBUILD 2>/dev/null && for source in ${source[@]};do echo $source|sed 's|^.*://.*/||g';done")))
+              (sources (split-string (shell-command-to-string
+				      (format "bash -c '%s'"
+					      "source PKGBUILD 2>/dev/null && for source in ${source[@]};do echo $source|sed \"s|^.*://.*/||g\";done"))))
               (source-locations (pkgbuild-source-locations)))
           (if (= (length sources) (length source-locations))
               (progn
@@ -348,7 +340,7 @@ Otherwise, it saves all modified buffers without asking."
 
 (defun pkgbuild-sums-line ()
   "calculate *sums=() line in PKGBUILDs"
-  (pkgbuild-shell-command-to-string pkgbuild-sums-command))
+  (shell-command-to-string pkgbuild-sums-command))
 
 (defun pkgbuild-update-sums-line ()
   "Update the sums line in a PKGBUILD."
@@ -459,7 +451,7 @@ command."
     (if (get-buffer stdout-buffer) (kill-buffer stdout-buffer))
     (if (not (equal
               (flet ((message (arg &optional args) nil)) ;Hack disable empty output
-                (pkgbuild-shell-command "source PKGBUILD" stdout-buffer stderr-buffer))
+                (shell-command "bash -c 'source PKGBUILD'" stdout-buffer stderr-buffer))
               0))
         (multiple-value-bind (err-p line) (pkgbuild-postprocess-stderr stderr-buffer)
           (if err-p
@@ -485,15 +477,20 @@ command."
   "Return a list of required files for the tarball package"
   (cons "PKGBUILD"
 	(remove-if (lambda (x) (string-match "^\\(https?\\|ftp\\)://" x))
-		   (split-string (pkgbuild-shell-command-to-string
-				  "source PKGBUILD 2>/dev/null && echo ${source[@]} $install")))))
+		   (split-string (shell-command-to-string
+				  "bash -c 'source PKGBUILD 2>/dev/null && echo ${source[@]} $install'")))))
+
+(defun pkgbuild-pkgname ()
+  "Return package name"
+  (shell-command-to-string
+   "bash -c 'source PKGBUILD 2>/dev/null && echo -n ${pkgname}'"))
 
 (defun pkgbuild-tar-command ()
   "Return default tar command"
   (let* ((tarball-files (pkgbuild-tarball-files))
-	 (dir (car (last (split-string (file-name-directory (buffer-file-name)) "/" t)))))
-    (concat "tar cvzf " dir ".tar.gz -C .. "
-	    (mapconcat (lambda (l) (concat dir "/" l)) tarball-files " "))))
+	 (dir (file-relative-name  default-directory "..")) )
+    (concat (format "tar cvzf ../%s.tar.gz -C .. %s" (pkgbuild-pkgname)
+		    (mapconcat (lambda (l) (format "%s%s" dir l)) tarball-files " ")))))
 
 (defun pkgbuild-tar (command)
   "Build a tarball containing all required files to build the package."
@@ -524,7 +521,7 @@ command."
 (defun pkgbuild-browse-url ()
   "Vist URL (if defined in PKGBUILD)"
   (interactive)
-  (let ((url (pkgbuild-shell-command-to-string (concat (buffer-string) "\nsource /dev/stdin >/dev/null 2>&1 && echo -n $url" ))))
+  (let ((url (shell-command-to-string (concat (buffer-string) "\nsource /dev/stdin >/dev/null 2>&1 && echo -n $url" ))))
     (if (string= url "")
         (message "No URL defined in PKGBUILD")
       (browse-url url))))
@@ -559,7 +556,7 @@ with no args, if that value is non-nil."
 	 (cmd (format pkgbuild-etags-command toplevel-directory etags-file)))
     (require 'etags)
     (message "Running etags to create TAGS file: %s" cmd)
-    (pkgbuild-shell-command cmd)
+    (shell-command cmd)
     (visit-tags-table etags-file)))
 
 (provide 'pkgbuild-mode)
