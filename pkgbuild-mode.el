@@ -422,7 +422,7 @@ command."
 	  (compilation-mode)
 	  (toggle-read-only -1))
         (let ((process
-               (start-process-shell-command "makepkg" pkgbuild-buffer-name
+               (start-file-process-shell-command "makepkg" pkgbuild-buffer-name
                                             command)))
           (set-process-filter process 'pkgbuild-command-filter)))
     (error "No PKGBUILD in current directory")))
