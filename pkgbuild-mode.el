@@ -129,6 +129,7 @@
 pkgname=%s
 pkgver=VERSION
 pkgrel=1
+epoch=
 pkgdesc=\"\"
 arch=('i686' 'x86_64')
 url=\"\"
@@ -136,6 +137,7 @@ license=('GPL')
 groups=()
 depends=()
 makedepends=()
+checkdepends=()
 optdepends=()
 provides=()
 conflicts=()
@@ -144,22 +146,34 @@ backup=()
 options=()
 install=
 changelog=
-source=($pkgname-$pkgver.tar.gz)
+source=($pkgname-$pkgver.tar.gz
+        $pkgname-$pkgver.patch)
 noextract=()
 md5sums=()
 
+prepare() {
+  cd $pkgname-$pkgver
+
+  patch -p1 -i \"$srcdir/$pkgname-$pkgver.patch\"
+}
+
 build() {
-  cd $startdir/src/$pkgname-$pkgver
+  cd $pkgname-$pkgver
 
   ./configure --prefix=/usr
   make
 }
 
+check() {
+  cd $pkgname-$pkgver
+
+  make -k check
+}
+
 package() {
+  cd $pkgname-$pkgver
 
-  cd $startdir/src/$pkgname-$pkgver
-
-  make DESTDIR=$startdir/pkg install
+  make DESTDIR=\"$pkgdir/\" install
 }
 
 # vim:set ts=2 sw=2 et:
