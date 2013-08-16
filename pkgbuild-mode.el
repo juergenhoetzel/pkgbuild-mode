@@ -310,7 +310,7 @@ Otherwise, it saves all modified buffers without asking."
                              (pkgbuild-make-overlay (car source-location) (cdr source-location)))))
                 all-available)
             (progn
-              (message "cannot verfify sources: don't use globbing %d/%d" (length sources) (length source-locations))
+              (message "cannot verify sources: don't use globbing %d/%d" (length sources) (length source-locations))
               nil)))
       (progn
         (message "no source line found")
@@ -338,7 +338,7 @@ Otherwise, it saves all modified buffers without asking."
     pkgbuild-overlay))
 
 (defun pkgbuild-find-file (file locations)
-  "Find file in multible locations"
+  "Find file in multiple locations"
   (remove-if-not 'file-readable-p (mapcar (lambda (dir) (expand-file-name file dir)) locations)))
 
 (defun pkgbuild-sums-line ()
@@ -523,7 +523,7 @@ command."
 
 
 (defun pkgbuild-browse-url ()
-  "Vist URL (if defined in PKGBUILD)"
+  "Visit URL (if defined in PKGBUILD)"
   (interactive)
   (let ((url (shell-command-to-string (concat (buffer-string) "\nsource /dev/stdin >/dev/null 2>&1 && echo -n $url" ))))
     (if (string= url "")
