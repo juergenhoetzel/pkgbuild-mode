@@ -33,7 +33,7 @@
 
 ;;; Changelog:
 ;; 0.11.7 
-;; really fix the point brougt up with 0.11.2
+;; really fix the point brought up with 0.11.2
 ;;
 ;; 0.11.6
 ;; new pacman 4.1 compliant VCS templates (git, bzr, svn, mercurial. Missing: cvs, darcs)
@@ -882,7 +882,7 @@ with no args, if that value is non-nil."
 
 (defadvice sh-must-be-shell-mode (around no-check-if-in-pkgbuild-mode activate)
   "Do not check for shell-mode if major mode is \\[pkgbuild-makepkg]"
-  (if (not (eq major-mode 'pkgbuild-mode)) ;workaround for older shell-scrip-mode versions
+  (if (not (eq major-mode 'pkgbuild-mode)) ;workaround for older shell-script-mode versions
       ad-do-it))                                
 
 (defun pkgbuild-etags (toplevel-directory)
