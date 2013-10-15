@@ -1,4 +1,3 @@
-;; $Id: pkgbuild-mode.el,v 1.23 2007/10/20 16:02:14 juergen Exp $
 ;; Copyright (C) 2005-2010 Juergen Hoetzel
 
 ;;; License
@@ -32,6 +31,9 @@
 ;;                                auto-mode-alist))
 
 ;;; Changelog:
+;; 0.11.8
+;; added support for visiting the AUR site 
+;;
 ;; 0.11.7 
 ;; really fix the point brought up with 0.11.2
 ;;
@@ -108,12 +110,13 @@
 (require 'sh-script)
 (require 'advice)
 
-(defconst pkgbuild-mode-version "0.11.7" "Version of `pkgbuild-mode'.")
+(defconst pkgbuild-mode-version "0.11.8" "Version of `pkgbuild-mode'.")
 
 (defconst pkgbuild-mode-menu
   (purecopy '("PKGBUILD"
               ["Update sums" pkgbuild-update-sums-line t]
-              ["Browse url" pkgbuild-browse-url t]
+              ["Browse upstream url" pkgbuild-browse-upstream-url t]
+              ["Browse AUR url" pkgbuild-browse-AUR-url t]
               ["Increase release tag"    pkgbuild-increase-release-tag t]
               "---"
               ("Build package"
@@ -586,8 +589,9 @@ Otherwise, it saves all modified buffers without asking."
   (setq pkgbuild-mode-map (make-sparse-keymap))
   (define-key pkgbuild-mode-map "\C-c\C-r" 'pkgbuild-increase-release-tag)
   (define-key pkgbuild-mode-map "\C-c\C-c" 'pkgbuild-makepkg)
-  (define-key pkgbuild-mode-map "\C-c\C-a" 'pkgbuild-tar)
-  (define-key pkgbuild-mode-map "\C-c\C-b" 'pkgbuild-browse-url)
+  (define-key pkgbuild-mode-map "\C-c\C-t" 'pkgbuild-tar)
+  (define-key pkgbuild-mode-map "\C-c\C-b" 'pkgbuild-browse-upstream-url)
+  (define-key pkgbuild-mode-map "\C-c\C-a" 'pkgbuild-browse-AUR-url)
   (define-key pkgbuild-mode-map "\C-c\C-m" 'pkgbuild-update-sums-line)
   (define-key pkgbuild-mode-map "\C-c\C-e" 'pkgbuild-etags)
   (define-key pkgbuild-mode-map "\C-c\C-i" 'pkgbuild-install-file-initialize)
@@ -855,10 +859,18 @@ command."
 (interactive)
        (pkgbuild-shell-command-to-string pkgbuild-taurball-command))
 
-(defun pkgbuild-browse-url ()
-  "Visit URL (if defined in PKGBUILD)"
+(defun pkgbuild-browse-upstream-url ()
+  "Visit upstream URL (if defined in PKGBUILD)"
   (interactive)
   (let ((url (pkgbuild-shell-command-to-string (concat (buffer-string) "\nsource /dev/stdin >/dev/null 2>&1 && echo -n $url" ))))
+    (if (string= url "")
+        (message "No URL defined in PKGBUILD") 
+      (browse-url url))))
+
+(defun pkgbuild-browse-AUR-url ()
+  "Visit AUR URL"
+  (interactive)
+  (let ((url (pkgbuild-shell-command-to-string (concat (buffer-string) "echo https://aur.archlinux.org/packages/$\(source PKGBUILD && echo $pkgname|sed 's+ +/+g'\)"))))
     (if (string= url "")
         (message "No URL defined in PKGBUILD") 
       (browse-url url))))
