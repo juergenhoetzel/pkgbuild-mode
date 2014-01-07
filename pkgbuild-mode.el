@@ -37,6 +37,9 @@
 
 ;;; Changelog:
 
+;; 0.12
+;; pkgbuild-tar: Use "makepkg --source" instead of using a custom tar command
+
 ;; 0.11
 ;; Support Sources renaming: https://wiki.archlinux.org/index.php/PKGBUILD#source
 ;; Use directory name as default pkgname
@@ -503,21 +506,12 @@ command."
   (shell-command-to-string
    "bash -c 'source PKGBUILD 2>/dev/null && echo -n ${pkgname}'"))
 
-(defun pkgbuild-tar-command ()
-  "Return default tar command"
-  (let* ((tarball-files (pkgbuild-tarball-files))
-	 (dir (file-relative-name  default-directory "..")) )
-    (concat (format "tar cvzf ../%s.tar.gz -C .. %s" (pkgbuild-pkgname)
-		    (mapconcat (lambda (l) (format "%s%s" dir l)) tarball-files " ")))))
-
 (defun pkgbuild-tar (command)
   "Build a tarball containing all required files to build the package."
   (interactive
-   (if pkgbuild-read-tar-command
-       (list (read-from-minibuffer "tar command: "
-                                   (pkgbuild-tar-command)
-                                   nil nil '(pkgbuild-tar-history . 1)))
-     (list (pkgbuild-tar-command))))
+   (list (read-from-minibuffer "tar command: "
+			       "makepkg --source -f"
+			       nil nil '(pkgbuild-tar-history . 1))))
   (let (pkgbuild-buffer-name)
     (save-some-buffers (not pkgbuild-ask-about-save) nil)
     (or (file-readable-p "PKGBUILD") (error "No PKGBUILD in current directory"))
