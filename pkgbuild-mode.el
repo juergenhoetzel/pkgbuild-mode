@@ -39,6 +39,7 @@
 
 ;; 0.12
 ;; pkgbuild-tar: Use "makepkg --source" instead of using a custom tar command
+;; pkgbuild-tar: Use unique output buffers
 
 ;; 0.11
 ;; Support Sources renaming: https://wiki.archlinux.org/index.php/PKGBUILD#source
@@ -512,14 +513,9 @@ command."
    (list (read-from-minibuffer "tar command: "
 			       "makepkg --source -f"
 			       nil nil '(pkgbuild-tar-history . 1))))
-  (let (pkgbuild-buffer-name)
+  (let ((pkgbuild-buffer-name (generate-new-buffer "*tar*")))
     (save-some-buffers (not pkgbuild-ask-about-save) nil)
-    (or (file-readable-p "PKGBUILD") (error "No PKGBUILD in current directory"))
-    (setq pkgbuild-buffer-name "*tar*")
     (pkgbuild-process-check pkgbuild-buffer-name)
-    (if (get-buffer pkgbuild-buffer-name)
-        (kill-buffer pkgbuild-buffer-name))
-    (create-file-buffer pkgbuild-buffer-name)
     (display-buffer pkgbuild-buffer-name)
     (save-excursion
       (set-buffer (get-buffer pkgbuild-buffer-name))
