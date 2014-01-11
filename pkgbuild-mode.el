@@ -146,6 +146,7 @@ url=\"\"
 arch=('i686' 'x86_64')
 license=('GPL')
 depends=()
+optdepends=()
 makedepends=()
 conflicts=()
 replaces=()
@@ -153,12 +154,20 @@ backup=()
 install=
 source=($pkgname-$pkgver.tar.gz)
 md5sums=()
+
 build() {
-  cd $srcdir/$pkgname-$pkgver
-  ./configure --prefix=/usr
-  make 
-  make DESTDIR=$pkgdir install
-}"
+  cd \"${srcdir}/${pkgname}-${pkgver}\"
+  cmake ./ -DCMAKE_INSTALL_PREFIX=/usr
+  make
+}
+
+package() {
+  cd \"${srcdir}/${pkgname}-${pkgver}\"
+  make DESTDIR=\"${pkgdir}\" install
+  install -Dm644 COPYING \"$pkgdir/usr/share/licenses/$pkgname/COPYING\"
+}
+
+# vim:set ts=2 sw=2 et:"
   "Template for new generic PKGBUILDs"
   :type 'string
   :group 'pkgbuild)
