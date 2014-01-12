@@ -31,6 +31,9 @@
 ;;                                auto-mode-alist))
 
 ;;; Changelog:
+;; 0.11.8.2
+;; changed template for generic PKGBUILDS
+;;
 ;; 0.11.8
 ;; added support for visiting the AUR site 
 ;;
@@ -146,7 +149,6 @@ url=\"\"
 arch=('i686' 'x86_64')
 license=('GPL')
 depends=()
-optdepends=()
 makedepends=()
 conflicts=()
 replaces=()
@@ -154,20 +156,12 @@ backup=()
 install=
 source=($pkgname-$pkgver.tar.gz)
 md5sums=()
-
 build() {
-  cd \"${srcdir}/${pkgname}-${pkgver}\"
-  cmake ./ -DCMAKE_INSTALL_PREFIX=/usr
-  make
-}
-
-package() {
-  cd \"${srcdir}/${pkgname}-${pkgver}\"
-  make DESTDIR=\"${pkgdir}\" install
-  install -Dm644 COPYING \"$pkgdir/usr/share/licenses/$pkgname/COPYING\"
-}
-
-# vim:set ts=2 sw=2 et:"
+  cd $srcdir/$pkgname-$pkgver
+  ./configure --prefix=/usr
+  make 
+  make DESTDIR=$pkgdir install
+}"
   "Template for new generic PKGBUILDs"
   :type 'string
   :group 'pkgbuild)
@@ -843,7 +837,7 @@ command."
     (if (get-buffer stderr-buffer) (kill-buffer stderr-buffer))
     (if (get-buffer stdout-buffer) (kill-buffer stdout-buffer))
     (if (not (equal 
-              (flet ((message (arg &optional args) nil)) ;Hack disable empty output
+              (cl-flet ((message (arg &optional args) nil)) ;Hack disable empty output
                 (pkgbuild-shell-command "source PKGBUILD" stdout-buffer stderr-buffer))
               0))
         (multiple-value-bind (err-p line) (pkgbuild-postprocess-stderr stderr-buffer)
