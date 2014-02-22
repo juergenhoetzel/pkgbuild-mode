@@ -109,11 +109,11 @@
 
 ;;; Code
 
-(require 'cl)
+(eval-when-compile (require 'cl))
 (require 'sh-script)
 (require 'advice)
 
-(defconst pkgbuild-mode-version "0.11.8" "Version of `pkgbuild-mode'.")
+(defconst pkgbuild-mode-version "0.11.8.5" "Version of `pkgbuild-mode'.")
 
 (defconst pkgbuild-mode-menu
   (purecopy '("PKGBUILD"
@@ -161,7 +161,7 @@ build() {
   ./configure --prefix=/usr
   make 
 }
-pckage() {
+package() {
   cd $srcdir/$pkgname-$pkgver
   make DESTDIR=$pkgdir install
 }"
@@ -803,7 +803,7 @@ command."
         (display-buffer pkgbuild-buffer-name)
         (with-current-buffer (get-buffer pkgbuild-buffer-name)
           (if (fboundp 'compilation-mode) (compilation-mode pkgbuild-buffer-name))
-          (if buffer-read-only (toggle-read-only)) 
+          (if buffer-read-only (read-only-mode)) 
           (goto-char (point-max)))
         (let ((process
                (start-process-shell-command "makepkg" pkgbuild-buffer-name
@@ -844,10 +844,11 @@ command."
                 (pkgbuild-shell-command "source PKGBUILD" stdout-buffer stderr-buffer))
               0))
         (multiple-value-bind (err-p line) (pkgbuild-postprocess-stderr stderr-buffer)
-          (if err-p
-              (goto-line line))
-          nil)
-      t)))
+          (if err-
+              (goto-char (point-min))
+	    (forward-line (1- line))
+	    nil)
+	  t)))
 
 (defun pkgbuild-postprocess-stderr (buf)        ;multiple values return
   "Find errors in BUF.If an error occurred return multiple values (t line), otherwise return multiple values (nil line).  BUF must exist."
