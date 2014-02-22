@@ -160,6 +160,9 @@ build() {
   cd $srcdir/$pkgname-$pkgver
   ./configure --prefix=/usr
   make 
+}
+pckage() {
+  cd $srcdir/$pkgname-$pkgver
   make DESTDIR=$pkgdir install
 }"
   "Template for new generic PKGBUILDs"
