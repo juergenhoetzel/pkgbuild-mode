@@ -845,8 +845,8 @@ command."
               0))
         (multiple-value-bind (err-p line) (pkgbuild-postprocess-stderr stderr-buffer)
           (if err-
-              ((goto-char (point-min))
-	    (forward-line (1- line)))
+	      (goto-char (point-min))
+	    (forward-line (1- line))
 	    nil)
 	  t))))
 
