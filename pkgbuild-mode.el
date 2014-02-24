@@ -845,10 +845,9 @@ command."
               0))
         (multiple-value-bind (err-p line) (pkgbuild-postprocess-stderr stderr-buffer)
           (if err-p
-	      (goto-char (point-min))
-	    (forward-line (1- line))
-	    nil)
-	  t))))
+              (goto-line line))
+          nil)
+	  t)))
 
 (defun pkgbuild-postprocess-stderr (buf)        ;multiple values return
   "Find errors in BUF.If an error occurred return multiple values (t line), otherwise return multiple values (nil line).  BUF must exist."
