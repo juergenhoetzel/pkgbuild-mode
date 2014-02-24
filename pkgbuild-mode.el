@@ -844,7 +844,7 @@ command."
                 (pkgbuild-shell-command "source PKGBUILD" stdout-buffer stderr-buffer))
               0))
         (multiple-value-bind (err-p line) (pkgbuild-postprocess-stderr stderr-buffer)
-          (if err-
+          (if err-p
 	      (goto-char (point-min))
 	    (forward-line (1- line))
 	    nil)
