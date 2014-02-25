@@ -844,11 +844,10 @@ command."
                 (pkgbuild-shell-command "source PKGBUILD" stdout-buffer stderr-buffer))
               0))
         (multiple-value-bind (err-p line) (pkgbuild-postprocess-stderr stderr-buffer)
-          (if err-
-	      (goto-char (point-min))
-	    (forward-line (1- line))
-	    nil)
-	  t))))
+          (if err-p
+              (goto-line line))
+          nil)
+	  t)))
 
 (defun pkgbuild-postprocess-stderr (buf)        ;multiple values return
   "Find errors in BUF.If an error occurred return multiple values (t line), otherwise return multiple values (nil line).  BUF must exist."
