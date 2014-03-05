@@ -112,8 +112,9 @@
 (eval-when-compile (require 'cl))
 (require 'sh-script)
 (require 'advice)
+(require 'compile)
 
-(defconst pkgbuild-mode-version "0.11.8.5" "Version of `pkgbuild-mode'.")
+(defconst pkgbuild-mode-version "0.11.8.13" "Version of `pkgbuild-mode'.")
 
 (defconst pkgbuild-mode-menu
   (purecopy '("PKGBUILD"
@@ -645,8 +646,8 @@ Otherwise, it saves all modified buffers without asking."
     (pkgbuild-delete-all-overlays)
     (if (search-forward-regexp "^\\s-*source=(\\([^()]*\\))" (point-max) t)
         (let ((all-available t)
-              (sources (split-string (pkgbuild-shell-command-to-string 
-				      "source PKGBUILD && for source in ${source[@]};do echo $source|sed 's+::+@+'|cut -d @ -f1 |sed 's|^.*://.*/||g';done")))
+              (sources (split-string (shell-command-to-string 
+				     (format "source PKGBUILD 2>/dev/null && for source in ${source[@]};do echo $source|sed 's+::+@+'|cut -d @ -f1 |sed 's|^.*://.*/||g';done"))))
               (source-locations (pkgbuild-source-locations)))
           (if (= (length sources) (length source-locations)) 
               (progn
@@ -845,10 +846,9 @@ command."
               0))
         (multiple-value-bind (err-p line) (pkgbuild-postprocess-stderr stderr-buffer)
           (if err-p
-       	      (goto-char (point-min))
-	    (forward-line (1- line))
+       	      (goto-line line))
 	    nil)
-	  t)))) 
+	  t)))
 
 (defun pkgbuild-postprocess-stderr (buf)        ;multiple values return
   "Find errors in BUF.If an error occurred return multiple values (t line), otherwise return multiple values (nil line).  BUF must exist."
