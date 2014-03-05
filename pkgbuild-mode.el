@@ -1,4 +1,4 @@
-;; Copyright (C) 2005-2010 Juergen Hoetzel
+;; Copyright (C) 2005-2013 Juergen Hoetzel
 
 ;;; License
 
@@ -31,6 +31,9 @@
 ;;                                auto-mode-alist))
 
 ;;; Changelog:
+;; 0.12
+;; pkgbuild-tar: Use unique output buffers (from Jürgen Hölzel)
+;;
 ;; 0.11.8.2
 ;; changed template for generic PKGBUILDS
 ;;
@@ -114,7 +117,7 @@
 (require 'advice)
 (require 'compile)
 
-(defconst pkgbuild-mode-version "0.11.8.13" "Version of `pkgbuild-mode'.")
+(defconst pkgbuild-mode-version "0.12" "Version of `pkgbuild-mode'.")
 
 (defconst pkgbuild-mode-menu
   (purecopy '("PKGBUILD"
@@ -861,10 +864,25 @@ command."
             (setq err-p t)))
       (values err-p line))))
   
-(defun pkgbuild-tar ()
+(defun pkgbuild-tar (command)
    "Build a tarball containing all required files to build the package."
-(interactive)
-       (pkgbuild-shell-command-to-string pkgbuild-taurball-command))
+   (interactive
+   (list (read-from-minibuffer "tar command: "
+                               "makepkg --source -f"
+                               nil nil '(pkgbuild-tar-history . 1))))
+   (let ((pkgbuild-buffer-name (generate-new-buffer "*tar*")))
+    (save-some-buffers (not pkgbuild-ask-about-save) nil)
+    (pkgbuild-process-check pkgbuild-buffer-name)
+    (display-buffer pkgbuild-buffer-name)
+    (save-excursion
+      (set-buffer (get-buffer pkgbuild-buffer-name))
+      (goto-char (point-max)))
+    (let ((process
+           (start-file-process-shell-command "tar" pkgbuild-buffer-name
+                                        command)))
+      (set-process-filter process 'pkgbuild-command-filter))))
+
+;;    (pkgbuild-shell-command-to-string pkgbuild-taurball-command))
 
 (defun pkgbuild-browse-upstream-url ()
   "Visit upstream URL (if defined in PKGBUILD)"
