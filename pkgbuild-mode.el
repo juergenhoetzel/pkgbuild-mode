@@ -567,6 +567,9 @@ with no args, if that value is non-nil."
     (shell-command cmd)
     (visit-tags-table etags-file)))
 
+;;;###autoload
+(add-to-list 'auto-mode-alist '("/PKGBUILD\\'" . pkgbuild-mode))
+
 (provide 'pkgbuild-mode)
 
 ;;; pkgbuild-mode.el ends here
