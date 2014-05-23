@@ -31,6 +31,9 @@
 ;;                                auto-mode-alist))
 
 ;;; Changelog:
+;; 0.12.1 
+;; some fixes
+;;
 ;; 0.12
 ;; pkgbuild-tar: Use unique output buffers (from Jürgen Hölzel)
 ;;
@@ -551,7 +554,7 @@ value of `user-mail-address'."
   :group 'pkgbuild)
 
 (defcustom pkgbuild-taurball-command "makepkg --source -f 2>/dev/null"
-  "shell command to generate *sums lines"
+  "shell command to generate taurballs"
   :type 'string
   :group 'pkgbuild)
 
@@ -868,7 +871,7 @@ command."
    "Build a tarball containing all required files to build the package."
    (interactive
    (list (read-from-minibuffer "tar command: "
-                               "makepkg --source -f"
+                               makepkg-taurball-command
                                nil nil '(pkgbuild-tar-history . 1))))
    (let ((pkgbuild-buffer-name (generate-new-buffer "*tar*")))
     (save-some-buffers (not pkgbuild-ask-about-save) nil)
