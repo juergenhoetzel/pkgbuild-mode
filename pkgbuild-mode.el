@@ -871,7 +871,7 @@ command."
    "Build a tarball containing all required files to build the package."
    (interactive
    (list (read-from-minibuffer "tar command: "
-                               makepkg-taurball-command
+                               pkgbuild-taurball-command
                                nil nil '(pkgbuild-tar-history . 1))))
    (let ((pkgbuild-buffer-name (generate-new-buffer "*tar*")))
     (save-some-buffers (not pkgbuild-ask-about-save) nil)
