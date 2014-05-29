@@ -31,11 +31,15 @@
 ;;                                auto-mode-alist))
 
 ;;; Changelog:
+;;
+;; 0.12.2
+;; mkaurball: new default for creating tarballs for the AUR.
+;;
 ;; 0.12.1 
 ;; some fixes
 ;;
 ;; 0.12
-;; pkgbuild-tar: Use unique output buffers (from Jürgen Hölzel)
+;; pkgbuild-tar: Use unique output buffers (from Jürgen Hötzel)
 ;;
 ;; 0.11.8.2
 ;; changed template for generic PKGBUILDS
@@ -120,7 +124,7 @@
 (require 'advice)
 (require 'compile)
 
-(defconst pkgbuild-mode-version "0.12" "Version of `pkgbuild-mode'.")
+(defconst pkgbuild-mode-version "0.12.2" "Version of `pkgbuild-mode'.")
 
 (defconst pkgbuild-mode-menu
   (purecopy '("PKGBUILD"
@@ -553,7 +557,7 @@ value of `user-mail-address'."
   :type 'string
   :group 'pkgbuild)
 
-(defcustom pkgbuild-taurball-command "makepkg --source -f 2>/dev/null"
+(defcustom pkgbuild-taurball-command "mkaurball -f 2>/dev/null"
   "shell command to generate taurballs"
   :type 'string
   :group 'pkgbuild)
