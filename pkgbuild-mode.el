@@ -316,7 +316,7 @@ md5sums=('SKIP')
 _svnmod=\"MODENAME\"
 
 pkgver() {
-  cd "$srcdir/${_svnmod}
+  cd "$srcdir/${_svnmod}"
   local ver="$(svnversion)"
   printf "r%s" "${ver//[[:alpha:]]}"
 }
