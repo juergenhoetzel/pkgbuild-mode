@@ -32,6 +32,9 @@
 
 ;;; Changelog:
 ;;
+;; 0.12.3
+;; better svn-template
+;;
 ;; 0.12.2
 ;; mkaurball: new default for creating tarballs for the AUR.
 ;;
@@ -313,12 +316,13 @@ md5sums=('SKIP')
 _svnmod=\"MODENAME\"
 
 pkgver() {
-  cd $SRCDEST/$_svnmod
-  svnversion
+  cd "$srcdir/${_svnmod}
+  local ver="$(svnversion)"
+  printf "r%s" "${ver//[[:alpha:]]}"
 }
 
 build() {
-  cd \"$srcdir/$_svnmod\"
+  cd \"$srcdir/${_svnmod}\"
   ./autogen.sh
   ./configure --prefix=/usr
   make
