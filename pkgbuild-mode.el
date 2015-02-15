@@ -156,26 +156,26 @@ noextract=()
 md5sums=()
 
 prepare() {
-  cd $pkgname-$pkgver
+  cd "$srcdir/$pkgname-$pkgver"
 
   patch -p1 -i \"$srcdir/$pkgname-$pkgver.patch\"
 }
 
 build() {
-  cd $pkgname-$pkgver
+  cd "$srcdir/$pkgname-$pkgver"
 
   ./configure --prefix=/usr
   make
 }
 
 check() {
-  cd $pkgname-$pkgver
+  cd "$srcdir/$pkgname-$pkgver"
 
   make -k check
 }
 
 package() {
-  cd $pkgname-$pkgver
+  cd "$srcdir/$pkgname-$pkgver"
 
   make DESTDIR=\"$pkgdir/\" install
 }
