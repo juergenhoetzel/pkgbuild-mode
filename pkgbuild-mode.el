@@ -36,6 +36,9 @@
 
 ;;; Changelog:
 
+;; 0.13
+;; Fix PKGBUILD template: Use $srcdir (Thanks amagura)
+
 ;; 0.12
 ;; pkgbuild-tar: Use "makepkg --source" instead of using a custom tar command
 ;; pkgbuild-tar: Use unique output buffers
