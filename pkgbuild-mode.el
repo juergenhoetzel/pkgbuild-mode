@@ -262,8 +262,6 @@ Otherwise, it saves all modified buffers without asking."
 
 (defvar pkgbuild-makepkg-history nil)
 
-(defvar pkgbuild-hashtype "md5")
-
 (defvar pkgbuild-in-hook-recursion nil) ;avoid recursion
 
 (defvar pkgbuild-emacs                  ;helper variable for xemacs compatibility
