@@ -32,6 +32,9 @@
 
 ;;; Changelog:
 ;;
+;; 0.13
+;; removed unused variable pkgbuild-hashtype
+
 ;; 0.12.4
 ;; refixes for pacman 4.2.0
 ;;
@@ -563,12 +566,12 @@ value of `user-mail-address'."
   :type 'string
   :group 'pkgbuild)
 
-(defcustom pkgbuild-sums-command "updpkgsums 2>/dev/null"
+(defcustom pkgbuild-sums-command "makepkg -g 2>/dev/null"
   "shell command to generate *sums lines"
   :type 'string
   :group 'pkgbuild)
 
-(defcustom pkgbuild-taurball-command "makepkg --source 2>/dev/null"
+(defcustom pkgbuild-taurball-command "makepkg -Sf 2>/dev/null"
   "shell command to generate taurballs"
   :type 'string
   :group 'pkgbuild)
@@ -599,8 +602,6 @@ Otherwise, it saves all modified buffers without asking."
   :group 'pkgbuild)
 
 (defvar pkgbuild-makepkg-history nil)
-
-(defvar pkgbuild-hashtype "md5")
 
 (defvar pkgbuild-in-hook-recursion nil) ;avoid recursion
 
