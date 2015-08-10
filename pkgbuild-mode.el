@@ -370,12 +370,15 @@ Otherwise, it saves all modified buffers without asking."
       (if (pkgbuild-source-check)       ;all sources available
           (save-excursion
             (goto-char (point-min))
-	    (while (re-search-forward "^[[:alnum:]]+sums=([^()]*)[ \f\t\r\v]*\n?" (point-max) t) ;sum line exists
-	      (delete-region (match-beginning 0) (match-end 0)))
-	    (goto-char (point-min))
-	    (if (re-search-forward "^source=([^()]*)" (point-max) t)
-                (insert "\n")
-              (error "Missing source line"))
+            (while (re-search-forward "^[[:space:]]*\\\(md\\\|sha\\\)[[:digit:]]+sums\\\(_[^=]+\\\)?=([^()]*)[ \f\t\r\v]*\n?" (point-max) t) ;sum line exists
+              (delete-region (match-beginning 0) (match-end 0)))
+            (goto-char (point-max))
+            (if (re-search-backward "^[[:space:]]*source\\\(_[^=]+\\\)?=([^()]*)" (point-min) t)
+                (progn
+                  (goto-char (match-end 0))
+                  (insert "\n"))
+              (error "Missing source line")
+              (goto-char (point-max)))
             (insert (pkgbuild-trim-right (pkgbuild-sums-line))))))))
 
 (defun pkgbuild-about-pkgbuild-mode (&optional arg)
