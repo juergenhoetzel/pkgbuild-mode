@@ -36,6 +36,9 @@
 
 ;;; Changelog:
 
+;; 0.14
+;; Support for source_${arch} and md5sums_${arch} (Thanks kolewu)
+
 ;; 0.13
 ;; Fix PKGBUILD template: Use $srcdir (Thanks amagura)
 
