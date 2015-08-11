@@ -313,7 +313,7 @@ Otherwise, it saves all modified buffers without asking."
   (save-excursion
     (goto-char (point-min))
     (pkgbuild-delete-all-overlays)
-    (if (search-forward-regexp "^\\s-*source=(\\([^()]*\\))" (point-max) t)
+    (if (search-forward-regexp "^\\s-*source[^=]*=(\\([^()]*\\))" (point-max) t)
         (let ((all-available t)
               (sources (split-string (shell-command-to-string (format "bash -c '%s'" "source PKGBUILD 2>/dev/null && for source in ${source[@]};do echo $source|sed \"s|:.*://.*||g\"|sed \"s|^.*://.*/||g\";done"))))
               (source-locations (pkgbuild-source-locations)))
