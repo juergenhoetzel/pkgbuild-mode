@@ -32,6 +32,9 @@
 
 ;;; Changelog:
 ;;
+;; 0.14
+;; made aur4-ready
+
 ;; 0.13
 ;; removed unused variable pkgbuild-hashtype
 
@@ -146,7 +149,7 @@
               ["Increase release tag"    pkgbuild-increase-release-tag t]
               "---"
               ("Build package"
-               ["Build tarball"       pkgbuild-tar                t]
+               ["Upload package to AUR"       pkgbuild-to-aur t]
                ["Build binary package"    pkgbuild-makepkg             t])
               "---"
               ["Create TAGS file"         pkgbuild-etags       t]
@@ -283,10 +286,9 @@ md5sums=('SKIP')
 _gitname=\"MODENAME\"
 
 pkgver() {
- cd \"$srcdir\"/\"$_gitname\"
- git describe --always | sed 's|-|.|g'
+  cd \"$_gitname\"
+  printf \"r%s.%s\" \"$(git rev-list --count HEAD\)\" \"$\(git rev-parse --short HEAD)\"
 }
-
 build() {
   cd \"$srcdir\"/\"$_gitname\"
   ./autogen.sh
@@ -370,8 +372,8 @@ md5sums=()
 _hgrepo=\"MODENAME\"
 
 pkgver() {
-  cd \"$srcdir\"/\"hg_repo\"
-  hg identify -ni | awk 'BEGIN{OFS=\".\";} {print $2,$1}'
+  cd \"$_hgrepo\"
+  printf \"r%s.%s\" \"$(hg identify -n)\" \"$(hg identify -i)\"
 }
 
 build() {
@@ -415,24 +417,28 @@ md5sums=()
 _cvsroot=\"CVSROOT\"
 _cvsmod=\"MODNAME\"
 
-build() {
-  cd \"$srcdir\"
-  msg \"Connecting to $_cvsmod.sourceforge.net CVS server...\"
+pkgver() {
+  cd $srcdir
   if [ -d $_cvsmod/CVS ]; then
+    msg2 \"Updating existing checkout\"
     cd $_cvsmod
-    cvs -z3 update -d
+    cvs -qz3 update -CdP > /dev/null
   else
-    cvs -z3 -d $_cvsroot co -D $pkgver -f $_cvsmod
+    msg2 \"Checking out upstream code\"
+    cvs -qz3 -d$_cvsroot co -P $_cvsmod > /dev/null
     cd $_cvsmod
   fi
+  msg2 \"Checkout up to date\"
 
-  msg \"CVS checkout done or server timeout\"
-  msg \"Starting make...\"
+  # no sane default her, find your own solution
+  # e.g. printf \"r%s\" \"$(head -1 ChangeLog |awk '{print $1}' |sed s+-++g)\"
+}
 
-  [ -d \"$srcdir/$_cvsmod-build\" ] &&rm -rf \"$srcdir/$_cvsmod-build\"
+build() {
+  cd \"$srcdir\"
+  [ -d \"$srcdir/$_cvsmod-build\" ] && rm -rf \"$srcdir/$_cvsmod-build\"
   cp -r \"$srcdir/$_cvsmod\" \"$srcdir/$_cvsmod-build\"
   cd \"$srcdir/$_cvsmod-build\"
-
 
   #
   # BUILD HERE
@@ -537,11 +543,6 @@ Otherwise, \\[pkgbuild-makepkg] just uses the value of `pkgbuild-makepkg-command
   :type 'boolean
   :group 'pkgbuild)
 
-(defcustom pkgbuild-read-tar-command t
-  "*Non-nil means \\[pkgbuild-tar] reads the tar command to use."
-  :type 'boolean
-  :group 'pkgbuild)
-
 (defcustom pkgbuild-makepkg-command "makepkg -m -f "
   "Command to create an ArchLinux package."
   :type 'string
@@ -561,6 +562,11 @@ value of `user-mail-address'."
   :type 'string
   :group 'pkgbuild)
 
+;;(defcustom pkgbuild-to-aur-command "prepare_4_aur.sh"
+;;   "Command to upload the files needed for creating an ArchLinux package to AUR4."
+;;   :type 'string
+;;   :group 'pkgbuild)
+
 (defcustom pkgbuild-source-directory-locations ".:src:/var/cache/pacman/src"
   "search path for PKGBUILD source files"
   :type 'string
@@ -568,11 +574,6 @@ value of `user-mail-address'."
 
 (defcustom pkgbuild-sums-command "makepkg -g 2>/dev/null"
   "shell command to generate *sums lines"
-  :type 'string
-  :group 'pkgbuild)
-
-(defcustom pkgbuild-taurball-command "makepkg -Sf 2>/dev/null"
-  "shell command to generate taurballs"
   :type 'string
   :group 'pkgbuild)
 
@@ -618,7 +619,7 @@ Otherwise, it saves all modified buffers without asking."
   (setq pkgbuild-mode-map (make-sparse-keymap))
   (define-key pkgbuild-mode-map "\C-c\C-r" 'pkgbuild-increase-release-tag)
   (define-key pkgbuild-mode-map "\C-c\C-c" 'pkgbuild-makepkg)
-  (define-key pkgbuild-mode-map "\C-c\C-t" 'pkgbuild-tar)
+  (define-key pkgbuild-mode-map "\C-c\C-t" 'pkgbuild-to-aur)
   (define-key pkgbuild-mode-map "\C-c\C-b" 'pkgbuild-browse-upstream-url)
   (define-key pkgbuild-mode-map "\C-c\C-a" 'pkgbuild-browse-AUR-url)
   (define-key pkgbuild-mode-map "\C-c\C-m" 'pkgbuild-update-sums-line)
@@ -746,7 +747,8 @@ Otherwise, it saves all modified buffers without asking."
   (if (and pkgbuild-update-sums-on-save (not pkgbuild-in-hook-recursion))
       (progn
         (setq pkgbuild-in-hook-recursion t)
-        (save-buffer)                   ;always save BUFFER 2 times so we get the correct sums in this hook
+        (save-buffer)
+        (save-buffer) ;always save BUFFER 2 times so we get the correct sums in this hook
         (setq pkgbuild-in-hook-recursion nil)
         (pkgbuild-update-sums-line))))
 
@@ -873,7 +875,7 @@ command."
 	  t)))
 
 (defun pkgbuild-postprocess-stderr (buf)        ;multiple values return
-  "Find errors in BUF.If an error occurred return multiple values (t line), otherwise return multiple values (nil line).  BUF must exist."
+  "Find errors in BUF. If an error occurred return multiple values (t line), otherwise return multiple values (nil line).  BUF must exist."
   (let (line err-p)
     (with-current-buffer buf (goto-char (point-min))
       (if (re-search-forward pkgbuild-bash-error-line-re nil t)
@@ -883,25 +885,10 @@ command."
             (setq err-p t)))
       (values err-p line))))
   
-(defun pkgbuild-tar (command)
-   "Build a tarball containing all required files to build the package."
-   (interactive
-   (list (read-from-minibuffer "tar command: "
-                               pkgbuild-taurball-command
-                               nil nil '(pkgbuild-tar-history . 1))))
-   (let ((pkgbuild-buffer-name (generate-new-buffer "*tar*")))
-    (save-some-buffers (not pkgbuild-ask-about-save) nil)
-    (pkgbuild-process-check pkgbuild-buffer-name)
-    (display-buffer pkgbuild-buffer-name)
-    (save-excursion
-      (set-buffer (get-buffer pkgbuild-buffer-name))
-      (goto-char (point-max)))
-    (let ((process
-           (start-file-process-shell-command "tar" pkgbuild-buffer-name
-                                        command)))
-      (set-process-filter process 'pkgbuild-command-filter))))
-
-;;    (pkgbuild-shell-command-to-string pkgbuild-taurball-command))
+(defun pkgbuild-to-aur ()
+    "Use an external shellscript to upload changes to AUR"
+    (interactive)
+    (pkgbuild-shell-command-to-string (concat "prepare_4_aur4.sh " (read-string "Commit message: " nil nil "\"Update\""))))
 
 (defun pkgbuild-browse-upstream-url ()
   "Visit upstream URL (if defined in PKGBUILD)"
