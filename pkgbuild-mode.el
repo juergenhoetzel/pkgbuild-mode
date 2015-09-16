@@ -181,7 +181,6 @@ replaces=()
 backup=()
 install=
 source=($pkgname-$pkgver.tar.gz)
-md5sums=()
 build() {
   cd $srcdir/$pkgname-$pkgver
   ./configure --prefix=/usr
@@ -240,7 +239,6 @@ options=()
 install=
 source=(\"BZRURL\")
 noextract=()
-md5sums=('SKIP')
 
 pkgver() {
   cd $srcdir/$_bzrmod
@@ -282,7 +280,6 @@ options=()
 install=
 source=(\"GITURL\")
 noextract=()
-md5sums=('SKIP')
 _gitname=\"MODENAME\"
 
 pkgver() {
@@ -324,7 +321,6 @@ options=()
 install=
 source=(\"SVNURL\")
 noextract=()
-md5sums=('SKIP')
 _svnmod=\"MODENAME\"
 
 pkgver() {
@@ -368,7 +364,6 @@ options=()
 install=
 source=(\"HGURL\")
 noextract=()
-md5sums=()
 _hgrepo=\"MODENAME\"
 
 pkgver() {
@@ -412,7 +407,6 @@ options=()
 install=
 source=()
 noextract=()
-md5sums=()
 
 _cvsroot=\"CVSROOT\"
 _cvsmod=\"MODNAME\"
@@ -476,8 +470,10 @@ backup=()
 options=()
 install=
 source=()
+==> Empfange Quellen...
+  -> bigloo4.2a-beta16Sep15.tar.gz gefunden
+==> FEHLER: satisfy-ldconfig.sh wurde nicht im build Verzeichnis gefunden und ist keine URL.
 noextract=()
-md5sums=()
 
 _darcstrunk=\"DARCSURL\"
 _darcsmod=\"MODNAME\"
@@ -637,7 +633,7 @@ Otherwise, it saves all modified buffers without asking."
   (interactive)
   (save-excursion
     (goto-char (point-min))
-    (if (search-forward-regexp "^\\s-*source=(\\([^()]*\\))" (point-max) t)
+    (if (search-forward-regexp "^\\s-*source[^=]*=(\\([^()]*\\))" (point-max) t)
         (let ((l (list (match-beginning 1) (match-end 1)))
               (end (match-end 1)))
           (goto-char (match-beginning 1))
@@ -667,7 +663,7 @@ Otherwise, it saves all modified buffers without asking."
   (save-excursion 
     (goto-char (point-min))
     (pkgbuild-delete-all-overlays)
-    (if (search-forward-regexp "^\\s-*source=(\\([^()]*\\))" (point-max) t)
+    (if (search-forward-regexp "^\\s-*source[^=]*=(\\([^()]*\\))" (point-max) t)
         (let ((all-available t)
               (sources (split-string (shell-command-to-string 
 				     (format "source PKGBUILD 2>/dev/null && for source in ${source[@]};do echo $source|sed 's+::+@+'|cut -d @ -f1 |sed 's|^.*://.*/||g';done"))))
@@ -723,14 +719,17 @@ Otherwise, it saves all modified buffers without asking."
   (if (not (file-readable-p "PKGBUILD")) (error "Missing PKGBUILD")
     (if (not (pkgbuild-syntax-check)) (error "Syntax Error")
       (if (pkgbuild-source-check)       ;all sources available
-          (save-excursion 
+          (save-excursion
             (goto-char (point-min))
-	    (while (re-search-forward "^[[:alnum:]]+sums=([^()]*)[ \f\t\r\v]*\n?" (point-max) t) ;sum line exists
-	      (delete-region (match-beginning 0) (match-end 0)))
-	    (goto-char (point-min))
-	    (if (re-search-forward "^source=([^()]*)" (point-max) t)
-                (insert "\n")
-              (error "Missing source line"))
+            (while (re-search-forward "^[[:space:]]*\\\(md\\\|sha\\\)[[:digit:]]+sums\\\(_[^=]+\\\)?=([^()]*)[ \f\t\r\v]*\n?" (point-max) t) ;sum line exists
+              (delete-region (match-beginning 0) (match-end 0)))
+            (goto-char (point-max))
+            (if (re-search-backward "^[[:space:]]*source\\\(_[^=]+\\\)?=([^()]*)" (point-min) t)
+                (progn
+                  (goto-char (match-end 0))
+                  (insert "\n"))
+              (error "Missing source line")
+              (goto-char (point-max)))
             (insert (pkgbuild-trim-right (pkgbuild-sums-line))))))))
 
 (defun pkgbuild-about-pkgbuild-mode (&optional arg)
