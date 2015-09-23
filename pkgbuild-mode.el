@@ -284,7 +284,7 @@ _gitname=\"MODENAME\"
 
 pkgver() {
   cd \"$_gitname\"
-  printf \"r%s.%s\" \"$(git rev-list --count HEAD\)\" \"$\(git rev-parse --short HEAD)\"
+  printf \"r%s.%s\" $(git rev-list --count HEAD\) $\(git rev-parse --short HEAD)
 }
 build() {
   cd \"$srcdir\"/\"$_gitname\"
