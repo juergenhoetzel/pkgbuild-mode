@@ -324,7 +324,7 @@ Otherwise, it saves all modified buffers without asking."
               (progn
                 (loop for source in sources 
                       for source-location in source-locations
-                      do (when (not (pkgbuild-find-file source (split-string pkgbuild-source-directory-locations ":")))
+                      do (when (not (pkgbuild-file-available-p source (split-string pkgbuild-source-directory-locations ":")))
                            (progn
                              (setq all-available nil)
                              (pkgbuild-make-overlay (car source-location) (cdr source-location)))))
@@ -357,7 +357,7 @@ Otherwise, it saves all modified buffers without asking."
     (overlay-put pkgbuild-overlay 'pkgbuild-overlay t)
     pkgbuild-overlay))
 
-(defun pkgbuild-find-file (file locations)
+(defun pkgbuild-file-available-p (file locations)
   "Find FILE in multiple locations"
   (remove-if-not 'file-readable-p (mapcar (lambda (dir)
 					    (let* ((name-local (expand-file-name file dir)))
