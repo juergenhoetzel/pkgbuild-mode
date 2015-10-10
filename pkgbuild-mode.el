@@ -358,7 +358,7 @@ Otherwise, it saves all modified buffers without asking."
     pkgbuild-overlay))
 
 (defun pkgbuild-find-file (file locations)
-  "Find file in multiple locations"
+  "Find FILE in multiple locations"
   (remove-if-not 'file-readable-p (mapcar (lambda (dir)
 					    (let* ((name-local (expand-file-name file dir)))
 						       (if (and (file-remote-p default-directory) (not (file-remote-p name-local)))
