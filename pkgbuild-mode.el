@@ -359,7 +359,13 @@ Otherwise, it saves all modified buffers without asking."
 
 (defun pkgbuild-find-file (file locations)
   "Find file in multiple locations"
-  (remove-if-not 'file-readable-p (mapcar (lambda (dir) (expand-file-name file dir)) locations)))
+  (remove-if-not 'file-readable-p (mapcar (lambda (dir)
+					    (let* ((name-local (expand-file-name file dir)))
+						       (if (and (file-remote-p default-directory) (not (file-remote-p name-local)))
+							   (with-parsed-tramp-file-name default-directory nil
+							     (tramp-make-tramp-file-name method user host name-local))
+							 name-local)))
+					  locations)))
 
 (defun pkgbuild-sums-line ()
   "calculate *sums=() line in PKGBUILDs"
