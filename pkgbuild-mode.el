@@ -281,11 +281,13 @@ install=
 source=(\"GITURL\")
 noextract=()
 _gitname=\"MODENAME\"
+md5sums=('SKIP')
 
 pkgver() {
   cd \"$_gitname\"
-  printf \"r\%s.\%s\" $\(git rev-list --count HEAD\) $\(git rev-parse --short HEAD\)
+  printf \"r%s.%s\" $(git rev-list --count HEAD) $(git rev-parse --short HEAD)
 }
+
 build() {
   cd \"$srcdir\"/\"$_gitname\"
   ./autogen.sh
@@ -760,37 +762,37 @@ Otherwise, it saves all modified buffers without asking."
   "Create a default pkgbuild if one does not exist or is empty."
   (interactive)
   (cond ((string-match "-bzr" (pkgbuild-get-directory buffer-file-name))
-	 (insert (format pkgbuild-bzr-template
+	 (insert (format "%s" pkgbuild-bzr-template
 			 pkgbuild-user-full-name 
 			 pkgbuild-user-mail-address 
 			 (or (pkgbuild-get-directory (buffer-file-name)) "NAME"))))
 	((string-match "-git" (pkgbuild-get-directory buffer-file-name))
-	 (insert (format pkgbuild-git-template
+	 (insert (format "%s" pkgbuild-git-template
 			 pkgbuild-user-full-name 
 			 pkgbuild-user-mail-address 
 			 (or (pkgbuild-get-directory (buffer-file-name)) "NAME"))))
 	((string-match "-svn" (pkgbuild-get-directory buffer-file-name))
-	 (insert (format pkgbuild-svn-template
+	 (insert (format "%s" pkgbuild-svn-template
 			 pkgbuild-user-full-name 
 			 pkgbuild-user-mail-address 
 			 (or (pkgbuild-get-directory (buffer-file-name)) "NAME"))))
 	((string-match "-hg" (pkgbuild-get-directory buffer-file-name))
-	 (insert (format pkgbuild-hg-template
+	 (insert (format "%s" pkgbuild-hg-template
 			 pkgbuild-user-full-name 
 			 pkgbuild-user-mail-address 
 			 (or (pkgbuild-get-directory (buffer-file-name)) "NAME"))))
 	((string-match "-cvs" (pkgbuild-get-directory buffer-file-name))
-	 (insert (format pkgbuild-cvs-template
+	 (insert (format "%s" pkgbuild-cvs-template
 			 pkgbuild-user-full-name 
 			 pkgbuild-user-mail-address 
 			 (or (pkgbuild-get-directory (buffer-file-name)) "NAME"))))
 	((string-match "-darcs" (pkgbuild-get-directory buffer-file-name))
-	 (insert (format pkgbuild-darcs-template
+	 (insert (format "%s" pkgbuild-darcs-template
 			 pkgbuild-user-full-name 
 			 pkgbuild-user-mail-address 
 			 (or (pkgbuild-get-directory (buffer-file-name)) "NAME"))))
 	(t 
-	 (insert (format pkgbuild-generic-template
+	 (insert (format "%s" pkgbuild-generic-template
 			 pkgbuild-user-full-name 
 			 pkgbuild-user-mail-address 
 			 (or (pkgbuild-get-directory (buffer-file-name)) "NAME"))))))
