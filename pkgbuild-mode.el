@@ -286,6 +286,16 @@ Otherwise, it saves all modified buffers without asking."
   (define-key pkgbuild-mode-map "\C-c\C-e" 'pkgbuild-etags)
   )
 
+(defun pkgbuild-exec-bash (cmd &optional stdout stderr)
+  "Execute the given command string as a Bash script via 'bash -c'"
+  (if (or stdout stderr)
+      (process-exit-status
+       (make-process :command (list "bash" "-c" cmd)
+                     :buffer stdout
+                     :stderr stderr
+                     :name "pkgbuild-exec-bash"))
+    (process-lines "bash" "-c" cmd)))
+
 (defun pkgbuild-trim-right (str)        ;Helper function
   "Trim whitespace from end of the string"
   (if (string-match "[ \f\t\n\r\v]+$" str -1)
@@ -318,7 +328,7 @@ Otherwise, it saves all modified buffers without asking."
     (pkgbuild-delete-all-overlays)
     (if (search-forward-regexp "^\\s-*source[^=]*=(\\([^()]*\\))" (point-max) t)
         (let ((all-available t)
-              (sources (split-string (shell-command-to-string (format "bash -c '%s'" "source PKGBUILD 2>/dev/null && for source in ${source[@]};do echo $source|sed \"s|:.*://.*||g\"|sed \"s|^.*://.*/||g\";done"))))
+              (sources (pkgbuild-exec-bash "source PKGBUILD 2>/dev/null && for source in ${source[@]};do echo $source|sed \"s|:.*://.*||g\"|sed \"s|^.*://.*/||g\";done"))
               (source-locations (pkgbuild-source-locations)))
           (if (= (length sources) (length source-locations))
               (progn
@@ -371,7 +381,10 @@ Otherwise, it saves all modified buffers without asking."
 
 (defun pkgbuild-sums-line ()
   "calculate *sums=() line in PKGBUILDs"
-  (shell-command-to-string pkgbuild-sums-command))
+  (reduce
+   (lambda (a b)
+     (concat a "\n" b))
+   (pkgbuild-exec-bash pkgbuild-sums-command)))
 
 (defun pkgbuild-update-sums-line ()
   "Update the sums line in a PKGBUILD."
@@ -449,8 +462,8 @@ command."
 	  (compilation-mode)
 	  (toggle-read-only -1))
         (let ((process
-               (start-file-process-shell-command "makepkg" pkgbuild-buffer-name
-                                            command)))
+               (start-file-process "makepkg" pkgbuild-buffer-name
+                                   "bash" "-c" command)))
           (set-process-filter process 'pkgbuild-command-filter)))
     (error "No PKGBUILD in current directory")))
 
@@ -486,7 +499,7 @@ command."
     (if (get-buffer stdout-buffer) (kill-buffer stdout-buffer))
     (if (not (equal
               (flet ((message (arg &optional args) nil)) ;Hack disable empty output
-                (shell-command "bash -c 'source PKGBUILD'" stdout-buffer stderr-buffer))
+                (pkgbuild-exec-bash "source PKGBUILD" stdout-buffer stderr-buffer))
               0))
         (multiple-value-bind (err-p line) (pkgbuild-postprocess-stderr stderr-buffer)
           (if err-p
@@ -512,13 +525,12 @@ command."
   "Return a list of required files for the tarball package"
   (cons "PKGBUILD"
 	(remove-if (lambda (x) (string-match "^\\(https?\\|ftp\\)://" x))
-		   (split-string (shell-command-to-string
-				  "bash -c 'source PKGBUILD 2>/dev/null && echo ${source[@]} $install'")))))
+		   (pkgbuild-exec-bash
+         "source PKGBUILD 2>/dev/null && echo ${source[@]} $install"))))
 
 (defun pkgbuild-pkgname ()
   "Return package name"
-  (shell-command-to-string
-   "bash -c 'source PKGBUILD 2>/dev/null && echo -n ${pkgname}'"))
+  (car (pkgbuild-exec-bash "source PKGBUILD 2>/dev/null && echo -n ${pkgname}")))
 
 (defun pkgbuild-tar (command)
   "Build a tarball containing all required files to build the package."
@@ -534,15 +546,15 @@ command."
       (set-buffer (get-buffer pkgbuild-buffer-name))
       (goto-char (point-max)))
     (let ((process
-           (start-file-process-shell-command "tar" pkgbuild-buffer-name
-                                        command)))
+           (start-file-process "tar" pkgbuild-buffer-name
+                               "bash" "-c" command)))
       (set-process-filter process 'pkgbuild-command-filter))))
 
 
 (defun pkgbuild-browse-url ()
   "Visit URL (if defined in PKGBUILD)"
   (interactive)
-  (let ((url (shell-command-to-string (concat (buffer-string) "\nsource /dev/stdin >/dev/null 2>&1 && echo -n $url" ))))
+  (let ((url (car (pkgbuild-exec-bash (concat (buffer-string) "\nsource /dev/stdin >/dev/null 2>&1 && echo -n $url" )))))
     (if (string= url "")
         (message "No URL defined in PKGBUILD")
       (browse-url url))))
@@ -577,7 +589,7 @@ with no args, if that value is non-nil."
 	 (cmd (format pkgbuild-etags-command toplevel-directory etags-file)))
     (require 'etags)
     (message "Running etags to create TAGS file: %s" cmd)
-    (shell-command cmd)
+    (pkgbuild-exec-bash cmd)
     (visit-tags-table etags-file)))
 
 ;;;###autoload
