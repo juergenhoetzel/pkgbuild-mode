@@ -1,8 +1,13 @@
 ;;; pkgbuild-mode.el --- Interface to the ArchLinux package manager
 
-;; Copyright (C) 2005-2015 Juergen Hoetzel
-
-;;; License
+;; Copyright (C) 2005-2018 Juergen Hoetzel
+;;
+;; Author: Juergen Hoetzel <juergen@hoetzel.info>
+;; Maintainer: Juergen Hoetzel <juergen@hoetzel.info>
+;; URL: https://github.com/juergenhoetzel/pkgbuild-mode
+;; Package-Requires: ((emacs "25.1"))
+;; Version: 1.0-snapshot
+;; Keywords: languages
 
 ;; This program is free software; you can redistribute it and/or
 ;; modify it under the terms of the GNU General Public License
@@ -365,7 +370,7 @@ Otherwise, it saves all modified buffers without asking."
        (file-readable-p
 	(if (and (file-remote-p default-directory) (not (file-remote-p name-local)))
 	    (with-parsed-tramp-file-name default-directory nil
-	      (tramp-make-tramp-file-name method user host name-local))
+	      (tramp-make-tramp-file-name method user domain host name-local))
 	  name-local))))
    locations))
 
@@ -558,7 +563,7 @@ with no args, if that value is non-nil."
   (set (make-local-variable 'sh-basic-offset) 2) ;This is what judd uses
   (sh-set-shell "/bin/bash")
   (easy-menu-add pkgbuild-mode-menu)
-  ;; This does not work because makepkg requires safed file
+  ;; This does not work because makepkg req. saved file
   (add-hook 'local-write-file-hooks 'pkgbuild-update-sums-line-hook nil t)
   (if (= (buffer-size) 0)
       (pkgbuild-initialize)
