@@ -362,11 +362,11 @@ Otherwise, it saves all modified buffers without asking."
     (overlay-put pkgbuild-overlay 'pkgbuild-overlay t)
     pkgbuild-overlay))
 
-(defun pkgbuild-file-available-p (file locations)
-  "Find FILE in multiple locations"
+(defun pkgbuild-file-available-p (filename locations)
+  "Return t if file FILENAME exists LOCATIONS."
   (find-if
    (lambda (dir)
-     (let* ((name-local (expand-file-name file dir)))
+     (let* ((name-local (expand-file-name filename dir)))
        (file-readable-p
 	(if (and (file-remote-p default-directory) (not (file-remote-p name-local)))
 	    (with-parsed-tramp-file-name default-directory nil
