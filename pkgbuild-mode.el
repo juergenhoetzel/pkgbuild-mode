@@ -461,8 +461,7 @@ command."
 
 (defun pkgbuild-command-filter (process string)
   "Filter to process normal output."
-  (save-excursion
-    (set-buffer (process-buffer process))
+  (with-current-buffer (process-buffer process)
     (save-excursion
       (goto-char (process-mark process))
       (comint-watch-for-password-prompt string)
@@ -503,8 +502,7 @@ command."
 (defun pkgbuild-postprocess-stderr (buf)        ;multiple values return
   "Find errors in BUF.If an error occurred return multiple values (t line), otherwise return multiple values (nil line).  BUF must exist."
   (let (line err-p)
-    (save-excursion
-      (set-buffer buf)
+    (with-current-buffer buf
       (goto-char (point-min))
       (if (re-search-forward pkgbuild-bash-error-line-re nil t)
           (progn
@@ -535,8 +533,7 @@ command."
     (save-some-buffers (not pkgbuild-ask-about-save) nil)
     (pkgbuild-process-check pkgbuild-buffer-name)
     (display-buffer pkgbuild-buffer-name)
-    (save-excursion
-      (set-buffer (get-buffer pkgbuild-buffer-name))
+    (with-current-buffer (get-buffer pkgbuild-buffer-name)
       (goto-char (point-max)))
     (let ((process
            (start-file-process-shell-command "tar" pkgbuild-buffer-name
