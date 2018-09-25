@@ -272,15 +272,6 @@ Otherwise, it saves all modified buffers without asking."
 
 (defvar pkgbuild-in-hook-recursion nil) ;avoid recursion
 
-(defvar pkgbuild-emacs                  ;helper variable for xemacs compatibility
-  (cond
-   ((string-match "XEmacs" emacs-version)
-    'xemacs)
-   (t
-    'emacs))
-  "The type of Emacs we are currently running.")
-
-
 (unless pkgbuild-mode-map               ; Do not change the keymap if it is already set up.
   (setq pkgbuild-mode-map (make-sparse-keymap))
   (define-key pkgbuild-mode-map "\C-c\C-r"  'pkgbuild-increase-release-tag)
@@ -288,8 +279,7 @@ Otherwise, it saves all modified buffers without asking."
   (define-key pkgbuild-mode-map "\C-c\C-a" 'pkgbuild-tar)
   (define-key pkgbuild-mode-map "\C-c\C-u" 'pkgbuild-browse-url)
   (define-key pkgbuild-mode-map "\C-c\C-m" 'pkgbuild-update-sums-line)
-  (define-key pkgbuild-mode-map "\C-c\C-e" 'pkgbuild-etags)
-  )
+  (define-key pkgbuild-mode-map "\C-c\C-e" 'pkgbuild-etags))
 
 (defun pkgbuild-trim-right (str)        ;Helper function
   "Trim whitespace from end of the string"
