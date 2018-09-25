@@ -330,9 +330,8 @@ Otherwise, it saves all modified buffers without asking."
                 (loop for source in sources 
                       for source-location in source-locations
                       do (when (not (pkgbuild-file-available-p source (split-string pkgbuild-source-directory-locations ":")))
-                           (progn
-                             (setq all-available nil)
-                             (pkgbuild-make-overlay (car source-location) (cdr source-location)))))
+                           (setq all-available nil)
+                           (pkgbuild-make-overlay (car source-location) (cdr source-location))))
                 all-available)
             (progn
               (message "cannot verify sources: don't use globbing %d/%d" (length sources) (length source-locations))
