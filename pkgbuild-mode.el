@@ -370,7 +370,7 @@ Otherwise, it saves all modified buffers without asking."
        (file-readable-p
 	(if (and (file-remote-p default-directory) (not (file-remote-p name-local)))
 	    (with-parsed-tramp-file-name default-directory nil
-	      (tramp-make-tramp-file-name method user domain host name-local))
+	      (tramp-make-tramp-file-name method user domain host port name-local))
 	  name-local))))
    locations))
 
