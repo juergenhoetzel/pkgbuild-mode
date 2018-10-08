@@ -902,7 +902,7 @@ command."
 (defun pkgbuild-browse-AUR-url ()
   "Visit AUR URL"
   (interactive)
-  (let ((url (pkgbuild-shell-command-to-string (concat (buffer-string) "echo https://aur.archlinux.org/packages/$\(source PKGBUILD && echo $pkgname|sed 's+ +/+g'\)"))))
+  (let ((url (pkgbuild-shell-command-to-string (concat (buffer-string) "echo https://aur.archlinux.org/packages/" "$\(source PKGBUILD && echo $pkgname|sed 's+ +/+g'\)"))))
     (if (string= url "")
         (message "No URL defined in PKGBUILD") 
       (browse-url url))))
