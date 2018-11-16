@@ -479,7 +479,7 @@ command."
     (if (get-buffer stderr-buffer) (kill-buffer stderr-buffer))
     (if (get-buffer stdout-buffer) (kill-buffer stdout-buffer))
     (if (not (equal
-              (cl-labels ((message (arg &optional args) nil)) ;Hack disable empty output
+              (cl-labels ((message (arg &rest args) nil)) ;Hack disable empty output
                 (shell-command "bash -c 'source PKGBUILD'" stdout-buffer stderr-buffer))
               0))
         (multiple-value-bind (err-p line) (pkgbuild-postprocess-stderr stderr-buffer)
