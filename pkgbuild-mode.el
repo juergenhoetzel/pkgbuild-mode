@@ -312,8 +312,9 @@ Otherwise, it saves all modified buffers without asking."
     (goto-char (point-min))
     (pkgbuild-delete-all-overlays)
     (if (search-forward-regexp "^\\s-*source[^=]*=(\\([^()]*\\))" (point-max) t)
-        (let ((all-available t)
-              (sources (split-string (shell-command-to-string (format "bash -c '%s'" "source PKGBUILD 2>/dev/null && for source in ${source[@]};do echo $source|sed \"s|:.*://.*||g\"|sed \"s|^.*://.*/||g\";done"))))
+        (let* ((all-available t)
+	       (shell-file-name "/bin/bash")
+               (sources (split-string (shell-command-to-string (format "bash -c '%s'" "source PKGBUILD 2>/dev/null && for source in ${source[@]};do echo $source|sed \"s|:.*://.*||g\"|sed \"s|^.*://.*/||g\";done"))))
               (source-locations (pkgbuild-source-locations)))
           (if (= (length sources) (length source-locations))
               (progn
@@ -472,7 +473,7 @@ command."
 (defun pkgbuild-syntax-check ()
   "evaluate PKGBUILD and search stderr for errors"
   (interactive)
-  (let  (
+  (let  ((shell-file-name "/bin/bash")
          (stderr-buffer (concat "*PKGBUILD(" (buffer-file-name) ") stderr*"))
 	 (stdout-buffer (concat "*PKGBUILD(" (buffer-file-name) ") stdout*")))
     (if (get-buffer stderr-buffer) (kill-buffer stderr-buffer))
@@ -533,7 +534,8 @@ command."
 (defun pkgbuild-browse-url ()
   "Visit URL (if defined in PKGBUILD)"
   (interactive)
-  (let ((url (shell-command-to-string (concat (buffer-string) "\nsource /dev/stdin >/dev/null 2>&1 && echo -n $url" ))))
+  (let* ((shell-file-name "/bin/bash")
+	 (url (shell-command-to-string (concat (buffer-string) "\nsource /dev/stdin >/dev/null 2>&1 && echo -n $url" ))))
     (if (string= url "")
         (message "No URL defined in PKGBUILD")
       (browse-url url))))
@@ -565,6 +567,7 @@ with no args, if that value is non-nil."
   The TAGS file is also immediately visited with `visit-tags-table'."
   (interactive "DToplevel directory: ")
   (let* ((etags-file (expand-file-name "TAGS" toplevel-directory))
+	 (shell-file-name "/bin/bash")
 	 (cmd (format pkgbuild-etags-command toplevel-directory etags-file)))
     (require 'etags)
     (message "Running etags to create TAGS file: %s" cmd)
