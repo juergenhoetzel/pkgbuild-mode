@@ -478,10 +478,9 @@ command."
 	 (stdout-buffer (concat "*PKGBUILD(" (buffer-file-name) ") stdout*")))
     (if (get-buffer stderr-buffer) (kill-buffer stderr-buffer))
     (if (get-buffer stdout-buffer) (kill-buffer stdout-buffer))
-    (if (not (equal
+    (if (not (zerop
               (cl-labels ((message (arg &rest args) nil)) ;Hack disable empty output
-                (shell-command "bash -c 'source PKGBUILD'" stdout-buffer stderr-buffer))
-              0))
+                (shell-command "bash -c 'source PKGBUILD'" stdout-buffer stderr-buffer))))
         (multiple-value-bind (err-p line) (pkgbuild-postprocess-stderr stderr-buffer)
           (if err-p
               (goto-line line))
