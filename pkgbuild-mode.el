@@ -548,6 +548,7 @@ with no args, if that value is non-nil."
   (easy-menu-define pkgbuild-call-menu pkgbuild-mode-map
                     "Post menu for `pkgbuild-mode'." pkgbuild-mode-menu)
   (set (make-local-variable 'sh-basic-offset) 2) ;This is what judd uses
+  (set (make-local-variable 'compile-command) pkgbuild-makepkg-command)
   (sh-set-shell "/bin/bash")
   (easy-menu-add pkgbuild-mode-menu)
   ;; This does not work because makepkg req. saved file
