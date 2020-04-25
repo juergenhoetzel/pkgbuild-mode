@@ -396,8 +396,7 @@ Otherwise, it saves all modified buffers without asking."
 (defun pkgbuild-update-srcinfo ()
   "Update .SRCINFO"
   (interactive)
-  (shell-command-to-string pkgbuild-srcinfo-command)
-  )
+  (shell-command-to-string pkgbuild-srcinfo-command))
 
 (defun pkgbuild-about-pkgbuild-mode (&optional arg)
   "About `pkgbuild-mode'."
