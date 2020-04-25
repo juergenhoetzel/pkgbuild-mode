@@ -251,6 +251,11 @@ value of `user-mail-address'."
   :type 'string
   :group 'pkgbuild)
 
+(defcustom pkgbuild-srcinfo-command "makepkg --printsrcinfo 2>/dev/null > .SRCINFO"
+  "shell command to generate .SRCINFO"
+  :type 'string
+  :group 'pkgbuild)
+
 (defcustom pkgbuild-ask-about-save t
   "*Non-nil means \\[pkgbuild-makepkg] asks which buffers to save before starting packaging.
 Otherwise, it saves all modified buffers without asking."
@@ -279,6 +284,7 @@ Otherwise, it saves all modified buffers without asking."
   (define-key pkgbuild-mode-map "\C-c\C-a" 'pkgbuild-tar)
   (define-key pkgbuild-mode-map "\C-c\C-u" 'pkgbuild-browse-url)
   (define-key pkgbuild-mode-map "\C-c\C-m" 'pkgbuild-update-sums-line)
+  (define-key pkgbuild-mode-map "\C-c\C-s" 'pkgbuild-update-srcinfo)
   (define-key pkgbuild-mode-map "\C-c\C-e" 'pkgbuild-etags))
 
 (defun pkgbuild-trim-right (str)        ;Helper function
@@ -386,6 +392,11 @@ Otherwise, it saves all modified buffers without asking."
               (error "Missing source line")
               (goto-char (point-max)))
             (insert (pkgbuild-trim-right (pkgbuild-sums-line))))))))
+
+(defun pkgbuild-update-srcinfo ()
+  "Update .SRCINFO"
+  (interactive)
+  (shell-command-to-string pkgbuild-srcinfo-command))
 
 (defun pkgbuild-about-pkgbuild-mode (&optional arg)
   "About `pkgbuild-mode'."
