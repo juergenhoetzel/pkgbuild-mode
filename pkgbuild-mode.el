@@ -321,7 +321,11 @@ Otherwise, it saves all modified buffers without asking."
         (let* ((all-available t)
 	       (shell-file-name "/bin/bash")
                (sources (split-string (shell-command-to-string (format "bash -c '%s'" "source PKGBUILD 2>/dev/null && for source in ${source[@]};do echo $source|sed \"s|:.*://.*||g\"|sed \"s|^.*://.*/||g\";done"))))
-              (source-locations (pkgbuild-source-locations)))
+	       (source-locations (pkgbuild-source-locations))
+	       (single-glob (and (= 1 (length source-locations))
+				 (> (length sources) (length source-locations)))))
+	  (when single-glob
+	    (setq source-locations (make-list (length sources) (car source-locations))))
           (if (= (length sources) (length source-locations))
               (progn
                 (loop for source in sources 
