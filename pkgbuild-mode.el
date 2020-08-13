@@ -105,7 +105,7 @@
 ;;   Insert warn-messages in md5sums line when source files are not present
 ;;   Several bug fixes
 
-;;; Code
+;;; Code:
 
 
 (require 'cl)
@@ -191,13 +191,13 @@ package() {
 
 # vim:set ts=2 sw=2 et:
 "
-  "Template for new PKGBUILDs"
+  "Template for new PKGBUILDs."
   :type 'string
   :group 'pkgbuild)
 
 (defcustom pkgbuild-etags-command "find %s -name PKGBUILD|xargs etags.emacs -o %s --language=none --regex='/pkgname=\\([^ \t]+\\)/\\1/'"
-  "pkgbuild-etags needs to call the find and the etags program. %s is
-the placeholder for the toplevel directory and tagsfile"
+  "Command to create the tags file.
+%s is the placeholder for the toplevel directory and tagsfile"
   :type 'string
   :group 'pkgbuild)
 
@@ -228,31 +228,30 @@ Otherwise, \\[pkgbuild-makepkg] just uses the value of `pkgbuild-makepkg-command
   :group 'pkgbuild)
 
 (defcustom pkgbuild-user-full-name user-full-name
-  "*Full name of the user.
-This is used in the Maintainer tag. It defaults to the
-value of `user-full-name'."
+  "Full name of the user.
+The value is used in the maintainer tag.  It defaults to variable `user-full-name'."
   :type 'string
   :group 'pkgbuild)
 
 (defcustom pkgbuild-user-mail-address user-mail-address
   "*Email address of the user.
-This is used in the Maintainer tag. It defaults to the
+This is used in the Maintainer tag.  It defaults to the
 value of `user-mail-address'."
   :type 'string
   :group 'pkgbuild)
 
 (defcustom pkgbuild-source-directory-locations ".:src:/var/cache/pacman/src"
-  "search path for PKGBUILD source files"
+  "Search path for PKGBUILD source files."
   :type 'string
   :group 'pkgbuild)
 
 (defcustom pkgbuild-sums-command "makepkg -g 2>/dev/null"
-  "shell command to generate *sums lines"
+  "Shell command to generate *sums lines."
   :type 'string
   :group 'pkgbuild)
 
 (defcustom pkgbuild-srcinfo-command "makepkg --printsrcinfo 2>/dev/null > .SRCINFO"
-  "shell command to generate .SRCINFO"
+  "The shell command to generate .SRCINFO."
   :type 'string
   :group 'pkgbuild)
 
@@ -288,13 +287,12 @@ Otherwise, it saves all modified buffers without asking."
   (define-key pkgbuild-mode-map "\C-c\C-e" 'pkgbuild-etags))
 
 (defun pkgbuild-trim-right (str)        ;Helper function
-  "Trim whitespace from end of the string"
+  "Trim whitespace from end of the STR."
   (if (string-match "[ \f\t\n\r\v]+$" str -1)
       (pkgbuild-trim-right (substring str 0 -1))
     str))
 
 (defun pkgbuild-source-points()
-  (interactive)
   (save-excursion
     (goto-char (point-min))
     (if (search-forward-regexp "^\\s-*source=(\\([^()]*\\))" (point-max) t)
@@ -308,11 +306,11 @@ Otherwise, it saves all modified buffers without asking."
       nil)))
 
 (defun pkgbuild-source-locations()
-  "find source regions"
+  "Return list of the source regions."
   (delete-if (lambda (region) (= (car region) (cdr region))) (loop for item on (pkgbuild-source-points) by 'cddr collect (cons (car item) (cadr item)))))
 
 (defun pkgbuild-source-check ()
-  "highlight sources not available. Return true if all sources are available. This does not work if globbing returns multiple files"
+  "Highlight sources not available.  Return true if all sources are available."
   (interactive)
   (save-excursion
     (goto-char (point-min))
@@ -328,7 +326,7 @@ Otherwise, it saves all modified buffers without asking."
 	    (setq source-locations (make-list (length sources) (car source-locations))))
           (if (= (length sources) (length source-locations))
               (progn
-                (loop for source in sources 
+                (loop for source in sources
                       for source-location in source-locations
                       do (when (not (pkgbuild-file-available-p source (split-string pkgbuild-source-directory-locations ":")))
                            (setq all-available nil)
@@ -356,7 +354,7 @@ Otherwise, it saves all modified buffers without asking."
   (and (overlayp o) (overlay-get o 'pkgbuild-overlay)))
 
 (defun pkgbuild-make-overlay (beg end)
-  "Allocate an overlay to highlight. BEG and END specify the range in the buffer."
+  "Allocate an overlay to highlight.  BEG and END specify the range in the buffer."
   (let ((pkgbuild-overlay (make-overlay beg end nil t nil)))
     (overlay-put pkgbuild-overlay 'face 'pkgbuild-error-face)
     (overlay-put pkgbuild-overlay 'pkgbuild-overlay t)
@@ -375,7 +373,7 @@ Otherwise, it saves all modified buffers without asking."
    locations))
 
 (defun pkgbuild-sums-line ()
-  "calculate *sums=() line in PKGBUILDs"
+  "Calculate *sums=() line in PKGBUILD."
   (shell-command-to-string pkgbuild-sums-command))
 
 (defun pkgbuild-update-sums-line ()
@@ -398,11 +396,11 @@ Otherwise, it saves all modified buffers without asking."
             (insert (pkgbuild-trim-right (pkgbuild-sums-line))))))))
 
 (defun pkgbuild-update-srcinfo ()
-  "Update .SRCINFO"
+  "Update .SRCINFO."
   (interactive)
   (shell-command-to-string pkgbuild-srcinfo-command))
 
-(defun pkgbuild-about-pkgbuild-mode (&optional arg)
+(defun pkgbuild-about-pkgbuild-mode (&optional _)
   "About `pkgbuild-mode'."
   (interactive "p")
   (message
@@ -411,7 +409,7 @@ Otherwise, it saves all modified buffers without asking."
            " by Juergen Hoetzel, <juergen@hoetzel.info>")))
 
 (defun pkgbuild-update-sums-line-hook ()
-  "Update sum lines if the file was modified"
+  "Update sum lines if the file was modified."
   (if (and pkgbuild-update-sums-on-save (not pkgbuild-in-hook-recursion))
       (progn
         (setq pkgbuild-in-hook-recursion t)
@@ -437,10 +435,10 @@ command."
         (if (yes-or-no-p (concat "Process `" (process-name process)
                                  "' running.  Kill it? "))
             (delete-process process)
-          (error "Cannot run two simultaneous processes ...")))))
+          (error "Cannot run two simultaneous processes")))))
 
 (defun pkgbuild-makepkg (command)
-  "Build this package."
+  "Use makepkg COMMAND to build package."
   (interactive
    (if pkgbuild-read-makepkg-command
        (list (read-from-minibuffer "makepkg command: "
@@ -465,7 +463,7 @@ command."
     (error "No PKGBUILD in current directory")))
 
 (defun pkgbuild-command-filter (process string)
-  "Filter to process normal output."
+  "Called when new data STRING has arrived for PROCESS."
   (with-current-buffer (process-buffer process)
     (save-excursion
       (goto-char (process-mark process))
@@ -486,7 +484,7 @@ command."
       (message "No Release tag found..."))))
 
 (defun pkgbuild-syntax-check ()
-  "evaluate PKGBUILD and search stderr for errors"
+  "Evaluate PKGBUILD and search stderr for errors."
   (interactive)
   (let  ((shell-file-name "/bin/bash")
          (stderr-buffer (concat "*PKGBUILD(" (buffer-file-name) ") stderr*"))
@@ -516,19 +514,19 @@ command."
       (values err-p line))))
 
 (defun pkgbuild-tarball-files ()
-  "Return a list of required files for the tarball package"
+  "Return a list of required files for the tarball package."
   (cons "PKGBUILD"
 	(remove-if (lambda (x) (string-match "^\\(https?\\|ftp\\)://" x))
 		   (split-string (shell-command-to-string
 				  "bash -c 'source PKGBUILD 2>/dev/null && echo ${source[@]} $install'")))))
 
 (defun pkgbuild-pkgname ()
-  "Return package name"
+  "Return package name."
   (shell-command-to-string
    "bash -c 'source PKGBUILD 2>/dev/null && echo -n ${pkgname}'"))
 
 (defun pkgbuild-tar (command)
-  "Build a tarball containing all required files to build the package."
+  "Run COMMAND to build a tarball containing all source files."
   (interactive
    (list (read-from-minibuffer "tar command: "
 			       "makepkg --source -f"
@@ -546,7 +544,7 @@ command."
 
 
 (defun pkgbuild-browse-url ()
-  "Visit URL (if defined in PKGBUILD)"
+  "Visit package URL (if defined in PKGBUILD)."
   (interactive)
   (let* ((shell-file-name "/bin/bash")
 	 (url (shell-command-to-string (concat (buffer-string) "\nsource /dev/stdin >/dev/null 2>&1 && echo -n $url" ))))
@@ -573,13 +571,13 @@ with no args, if that value is non-nil."
     (and (pkgbuild-syntax-check) (pkgbuild-source-check))))
 
 (defadvice sh-must-be-shell-mode (around no-check-if-in-pkgbuild-mode activate)
-  "Do not check for shell-mode if major mode is \\[pkgbuild-makepkg]"
+  "Do not check for shell-mode if major mode is \\[pkgbuild-makepkg]."
   (if (not (eq major-mode 'pkgbuild-mode)) ;workaround for older shell-scrip-mode versions
       ad-do-it))
 
 (defun pkgbuild-etags (toplevel-directory)
-  "Create TAGS file by running `etags' recursively on the directory tree `pkgbuild-toplevel-directory'.
-  The TAGS file is also immediately visited with `visit-tags-table'."
+  "Create TAGS file by running `etags' in TOPLEVEL-DIRECTORY.
+The TAGS file is also immediately visited with `visit-tags-table'."
   (interactive "DToplevel directory: ")
   (let* ((etags-file (expand-file-name "TAGS" toplevel-directory))
 	 (shell-file-name "/bin/bash")
