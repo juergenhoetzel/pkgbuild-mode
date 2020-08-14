@@ -107,11 +107,11 @@
 
 ;;; Code:
 
-
-(require 'cl)
+(require 'cl-lib)
 (require 'sh-script)
 (require 'advice)
 (require 'compile)
+(require 'tramp)
 
 (defconst pkgbuild-mode-version "0.11" "Version of `pkgbuild-mode'.")
 
@@ -307,7 +307,7 @@ Otherwise, it saves all modified buffers without asking."
 
 (defun pkgbuild-source-locations()
   "Return list of the source regions."
-  (delete-if (lambda (region) (= (car region) (cdr region))) (loop for item on (pkgbuild-source-points) by 'cddr collect (cons (car item) (cadr item)))))
+  (cl-delete-if (lambda (region) (= (car region) (cdr region))) (cl-loop for item on (pkgbuild-source-points) by 'cddr collect (cons (car item) (cadr item)))))
 
 (defun pkgbuild-source-check ()
   "Highlight sources not available.  Return true if all sources are available."
@@ -326,7 +326,7 @@ Otherwise, it saves all modified buffers without asking."
 	    (setq source-locations (make-list (length sources) (car source-locations))))
           (if (= (length sources) (length source-locations))
               (progn
-                (loop for source in sources
+                (cl-loop for source in sources
                       for source-location in source-locations
                       do (when (not (pkgbuild-file-available-p source (split-string pkgbuild-source-directory-locations ":")))
                            (setq all-available nil)
@@ -362,7 +362,7 @@ Otherwise, it saves all modified buffers without asking."
 
 (defun pkgbuild-file-available-p (filename locations)
   "Return t if file FILENAME exists LOCATIONS."
-  (find-if
+  (cl-find-if
    (lambda (dir)
      (let* ((name-local (expand-file-name filename dir)))
        (file-readable-p
@@ -424,7 +424,7 @@ Otherwise, it saves all modified buffers without asking."
 		  pkgbuild-user-full-name
 		  pkgbuild-user-mail-address
 		  (or (substring (file-relative-name (file-name-directory buffer-file-name) "..") 0 -1)
-		      NAME))))
+		      "NAME"))))
 
 (defun pkgbuild-process-check (buffer)
   "Check if BUFFER has a running process.
@@ -455,7 +455,7 @@ command."
         (display-buffer pkgbuild-buffer-name)
 	(with-current-buffer pkgbuild-buffer-name
 	  (compilation-mode)
-	  (toggle-read-only -1))
+	  (read-only-mode -1))
         (let ((process
                (start-file-process-shell-command "makepkg" pkgbuild-buffer-name
                                             command)))
@@ -494,9 +494,10 @@ command."
     (if (not (zerop
               (cl-labels ((message (arg &rest args) nil)) ;Hack disable empty output
                 (shell-command "bash -c 'source PKGBUILD'" stdout-buffer stderr-buffer))))
-        (multiple-value-bind (err-p line) (pkgbuild-postprocess-stderr stderr-buffer)
+        (cl-multiple-value-bind (err-p line) (pkgbuild-postprocess-stderr stderr-buffer)
           (if err-p
-              (goto-line line))
+	      (with-no-warnings
+		(goto-line line)))
           nil)
       t)))
 
@@ -511,12 +512,12 @@ command."
             (setq line (string-to-number (match-string 1)))
             ; (pkgbuild-highlight-line line) TODO
             (setq err-p t)))
-      (values err-p line))))
+      (cl-values err-p line))))
 
 (defun pkgbuild-tarball-files ()
   "Return a list of required files for the tarball package."
   (cons "PKGBUILD"
-	(remove-if (lambda (x) (string-match "^\\(https?\\|ftp\\)://" x))
+	(cl-remove-if (lambda (x) (string-match "^\\(https?\\|ftp\\)://" x))
 		   (split-string (shell-command-to-string
 				  "bash -c 'source PKGBUILD 2>/dev/null && echo ${source[@]} $install'")))))
 
@@ -565,7 +566,7 @@ with no args, if that value is non-nil."
   (sh-set-shell "/bin/bash")
   (easy-menu-add pkgbuild-mode-menu)
   ;; This does not work because makepkg req. saved file
-  (add-hook 'local-write-file-hooks 'pkgbuild-update-sums-line-hook nil t)
+  (add-hook 'write-file-functions 'pkgbuild-update-sums-line-hook nil t)
   (if (= (buffer-size) 0)
       (pkgbuild-initialize)
     (and (pkgbuild-syntax-check) (pkgbuild-source-check))))
