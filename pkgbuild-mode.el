@@ -316,8 +316,7 @@ Otherwise, it saves all modified buffers without asking."
     (goto-char (point-min))
     (pkgbuild-delete-all-overlays)
     (if (search-forward-regexp "^\\s-*source[^=]*=(\\([^()]*\\))" (point-max) t)
-        (let* ((all-available t)
-	       (shell-file-name "/bin/bash")
+        (let* ((shell-file-name "/bin/bash")
                (sources (split-string (shell-command-to-string (format "bash -c '%s'" "source PKGBUILD 2>/dev/null && for source in ${source[@]};do echo $source|sed \"s|:.*://.*||g\"|sed \"s|^.*://.*/||g\";done"))))
 	       (source-locations (pkgbuild-source-locations))
 	       (single-glob (and (= 1 (length source-locations))
@@ -325,13 +324,12 @@ Otherwise, it saves all modified buffers without asking."
 	  (when single-glob
 	    (setq source-locations (make-list (length sources) (car source-locations))))
           (if (= (length sources) (length source-locations))
-              (progn
-                (cl-loop for source in sources
-                      for source-location in source-locations
-                      do (when (not (pkgbuild-file-available-p source (split-string pkgbuild-source-directory-locations ":")))
-                           (setq all-available nil)
-                           (pkgbuild-make-overlay (car source-location) (cdr source-location))))
-                all-available)
+              (cl-loop for source in sources with all-available = nil
+		       for source-location in source-locations
+		       do (when (not (pkgbuild-file-available-p source (split-string pkgbuild-source-directory-locations ":")))
+                            (setq all-available nil)
+                            (pkgbuild-make-overlay (car source-location) (cdr source-location)))
+		       finally return all-available)
             (progn
               (message "cannot verify sources: don't use globbing %d/%d" (length sources) (length source-locations))
               nil)))
