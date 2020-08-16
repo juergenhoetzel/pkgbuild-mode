@@ -295,15 +295,14 @@ Otherwise, it saves all modified buffers without asking."
 (defun pkgbuild-source-points()
   (save-excursion
     (goto-char (point-min))
-    (if (search-forward-regexp "^\\s-*source=(\\([^()]*\\))" (point-max) t)
-        (let ((l (list (match-beginning 1) (match-end 1)))
-              (end (match-end 1)))
-          (goto-char (match-beginning 1))
-          (while (search-forward-regexp "\\(\\\\[ \f\t\n\r\v]\\|[ \f\t\n\r\v]\\)+" end t)
-                  (setcdr (last l 2) (cons (match-beginning 0) (cdr (last l 2))))
-                  (setcdr (last l 2) (cons (match-end 1) (cdr (last l 2)))))
-          l)
-      nil)))
+    (when (search-forward-regexp "^\\s-*source=(\\([^()]*\\))" (point-max) t)
+      (let ((l (list (match-beginning 1) (match-end 1)))
+            (end (match-end 1)))
+        (goto-char (match-beginning 1))
+        (while (search-forward-regexp "\\(\\\\[ \f\t\n\r\v]\\|[ \f\t\n\r\v]\\)+" end t)
+          (setcdr (last l 2) (cons (match-beginning 0) (cdr (last l 2))))
+          (setcdr (last l 2) (cons (match-end 1) (cdr (last l 2)))))
+        l))))
 
 (defun pkgbuild-source-locations()
   "Return list of the source regions."
