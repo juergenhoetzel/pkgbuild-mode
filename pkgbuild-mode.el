@@ -306,7 +306,10 @@ Otherwise, it saves all modified buffers without asking."
 
 (defun pkgbuild-source-locations()
   "Return list of the source regions."
-  (cl-delete-if (lambda (region) (= (car region) (cdr region))) (cl-loop for item on (pkgbuild-source-points) by 'cddr collect (cons (car item) (cadr item)))))
+  (cl-loop for item on (pkgbuild-source-points)
+	   by 'cddr
+	   if (not (= (car item) (cadr item)))
+	   collect (cons (car item) (cadr item))))
 
 (defun pkgbuild-source-check ()
   "Highlight sources not available.  Return true if all sources are available."
