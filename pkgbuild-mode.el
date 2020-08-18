@@ -361,7 +361,7 @@ Otherwise, it saves all modified buffers without asking."
     pkgbuild-overlay))
 
 (defun pkgbuild-file-available-p (filename locations)
-  "Return t if file FILENAME exists LOCATIONS."
+  "Return t if FILENAME exists in LOCATIONS."
   (cl-find-if
    (lambda (dir)
      (let* ((name-local (expand-file-name filename dir)))
@@ -379,21 +379,23 @@ Otherwise, it saves all modified buffers without asking."
 (defun pkgbuild-update-sums-line ()
   "Update the sums line in a PKGBUILD."
   (interactive)
-  (if (not (file-readable-p "PKGBUILD")) (error "Missing PKGBUILD")
-    (if (not (pkgbuild-syntax-check)) (error "Syntax Error")
-      (if (pkgbuild-source-check)       ;all sources available
-          (save-excursion
-            (goto-char (point-min))
-            (while (re-search-forward "^[[:space:]]*\\\(md\\\|sha\\\)[[:digit:]]+sums\\\(_[^=]+\\\)?=([^()]*)[ \f\t\r\v]*\n?" (point-max) t) ;sum line exists
-              (delete-region (match-beginning 0) (match-end 0)))
-            (goto-char (point-max))
-            (if (re-search-backward "^[[:space:]]*source\\\(_[^=]+\\\)?=([^()]*)" (point-min) t)
-                (progn
-                  (goto-char (match-end 0))
-                  (insert "\n"))
-              (error "Missing source line")
-              (goto-char (point-max)))
-            (insert (pkgbuild-trim-right (pkgbuild-sums-line))))))))
+  (unless (file-readable-p "PKGBUILD")
+    (error "Missing PKGBUILD"))
+  (unless (pkgbuild-syntax-check)
+    (error "Syntax Error"))
+  (when (pkgbuild-source-check)       ;all sources available
+    (save-excursion
+      (goto-char (point-min))
+      (while (re-search-forward "^[[:space:]]*\\\(md\\\|sha\\\)[[:digit:]]+sums\\\(_[^=]+\\\)?=([^()]*)[ \f\t\r\v]*\n?" (point-max) t) ;sum line exists
+        (delete-region (match-beginning 0) (match-end 0)))
+      (goto-char (point-max))
+      (if (re-search-backward "^[[:space:]]*source\\\(_[^=]+\\\)?=([^()]*)" (point-min) t)
+          (progn
+            (goto-char (match-end 0))
+            (insert "\n"))
+        (error "Missing source line")
+        (goto-char (point-max)))
+      (insert (pkgbuild-trim-right (pkgbuild-sums-line))))))
 
 (defun pkgbuild-update-srcinfo ()
   "Update .SRCINFO."
@@ -510,7 +512,6 @@ command."
       (if (re-search-forward pkgbuild-bash-error-line-re nil t)
           (progn
             (setq line (string-to-number (match-string 1)))
-            ; (pkgbuild-highlight-line line) TODO
             (setq err-p t)))
       (cl-values err-p line))))
 
