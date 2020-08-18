@@ -326,7 +326,7 @@ Otherwise, it saves all modified buffers without asking."
 	  (when single-glob
 	    (setq source-locations (make-list (length sources) (car source-locations))))
           (if (= (length sources) (length source-locations))
-              (cl-loop for source in sources with all-available = nil
+              (cl-loop for source in sources with all-available = t
 		       for source-location in source-locations
 		       do (when (not (pkgbuild-file-available-p source (split-string pkgbuild-source-directory-locations ":")))
                             (setq all-available nil)
