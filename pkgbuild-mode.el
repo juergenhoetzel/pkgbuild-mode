@@ -350,7 +350,7 @@ Otherwise, it saves all modified buffers without asking."
         (setq l (cdr l))))))
 
 (defun pkgbuild-overlay-p (o)
-  "A predicate that return true iff O is an overlay used by pkgbuild-mode."
+  "A predicate that return true if O is an overlay used by pkgbuild-mode."
   (and (overlayp o) (overlay-get o 'pkgbuild-overlay)))
 
 (defun pkgbuild-make-overlay (beg end)
