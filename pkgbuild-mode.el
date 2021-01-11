@@ -340,7 +340,7 @@ Otherwise, it saves all modified buffers without asking."
         nil))))
 
 (defun pkgbuild-delete-all-overlays ()
-  "Delete all the overlays used by pkgbuild-mode."
+  "Delete all the overlays used by `pkgbuild-mode'."
   (interactive)                         ;test
   (let ((l (overlays-in (point-min) (point-max))))
     (while (consp l)
@@ -350,7 +350,7 @@ Otherwise, it saves all modified buffers without asking."
         (setq l (cdr l))))))
 
 (defun pkgbuild-overlay-p (o)
-  "A predicate that return true iff O is an overlay used by pkgbuild-mode."
+  "A predicate that return true iff O is an overlay used by `pkgbuild-mode'."
   (and (overlayp o) (overlay-get o 'pkgbuild-overlay)))
 
 (defun pkgbuild-make-overlay (beg end)
@@ -573,7 +573,7 @@ with no args, if that value is non-nil."
     (and (pkgbuild-syntax-check) (pkgbuild-source-check))))
 
 (defadvice sh-must-be-shell-mode (around no-check-if-in-pkgbuild-mode activate)
-  "Do not check for shell-mode if major mode is \\[pkgbuild-makepkg]."
+  "Do not check for `shell-mode' if major mode is \\[pkgbuild-makepkg]."
   (if (not (eq major-mode 'pkgbuild-mode)) ;workaround for older shell-scrip-mode versions
       ad-do-it))
 
