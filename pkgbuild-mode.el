@@ -1,6 +1,6 @@
 ;;; pkgbuild-mode.el --- Interface to the ArchLinux package manager
 
-;; Copyright (C) 2005-2020 Juergen Hoetzel
+;; Copyright (C) 2005-2021 Juergen Hoetzel
 ;;
 ;; Author: Juergen Hoetzel <juergen@hoetzel.info>
 ;; Maintainer: Juergen Hoetzel <juergen@hoetzel.info>
@@ -112,6 +112,7 @@
 (require 'advice)
 (require 'compile)
 (require 'tramp)
+(require 'flymake)
 
 (defconst pkgbuild-mode-version "0.11" "Version of `pkgbuild-mode'.")
 
@@ -311,14 +312,15 @@ Otherwise, it saves all modified buffers without asking."
 	   if (not (= (car item) (cadr item)))
 	   collect (cons (car item) (cadr item))))
 
-(defun pkgbuild-source-check ()
-  "Highlight sources not available.  Return true if all sources are available."
-  (interactive)
+(defun pkgbuild-flymkake-check (report-fn &rest _args)
+  "Run flymake spell checker.
+
+REPORT-FN is flymake's callback function."
   (save-excursion
     (goto-char (point-min))
-    (pkgbuild-delete-all-overlays)
     (if (search-forward-regexp "^\\s-*source[^=]*=(\\([^()]*\\))" (point-max) t)
         (let* ((shell-file-name "/bin/bash")
+	       diagnostics
                (sources (split-string (shell-command-to-string (format "bash -c '%s'" "source PKGBUILD 2>/dev/null && for source in ${source[@]};do echo $source|sed \"s|:.*://.*||g\"|sed \"s|^.*://.*/||g\";done"))))
 	       (source-locations (pkgbuild-source-locations))
 	       (single-glob (and (= 1 (length source-locations))
@@ -330,35 +332,13 @@ Otherwise, it saves all modified buffers without asking."
 		       for source-location in source-locations
 		       do (when (not (pkgbuild-file-available-p source (split-string pkgbuild-source-directory-locations ":")))
                             (setq all-available nil)
-                            (pkgbuild-make-overlay (car source-location) (cdr source-location)))
-		       finally return all-available)
-            (progn
-              (message "cannot verify sources: don't use globbing %d/%d" (length sources) (length source-locations))
-              nil)))
-      (progn
-        (message "no source line found")
-        nil))))
+                            (push (flymake-make-diagnostic (current-buffer) (car source-location) (cdr source-location)
+							   :error (format "%s not found in locations: %s" source pkgbuild-source-directory-locations))
+				  diagnostics))
+		       finally (funcall report-fn diagnostics))
+            (flymake-error (format "cannot verify sources: don't use globbing %d/%d" (length sources) (length source-locations)))))
+      (flymake-error "no source line found"))))
 
-(defun pkgbuild-delete-all-overlays ()
-  "Delete all the overlays used by `pkgbuild-mode'."
-  (interactive)                         ;test
-  (let ((l (overlays-in (point-min) (point-max))))
-    (while (consp l)
-      (progn
-        (if (pkgbuild-overlay-p (car l))
-            (delete-overlay (car l)))
-        (setq l (cdr l))))))
-
-(defun pkgbuild-overlay-p (o)
-  "A predicate that return true iff O is an overlay used by `pkgbuild-mode'."
-  (and (overlayp o) (overlay-get o 'pkgbuild-overlay)))
-
-(defun pkgbuild-make-overlay (beg end)
-  "Allocate an overlay to highlight.  BEG and END specify the range in the buffer."
-  (let ((pkgbuild-overlay (make-overlay beg end nil t nil)))
-    (overlay-put pkgbuild-overlay 'face 'pkgbuild-error-face)
-    (overlay-put pkgbuild-overlay 'pkgbuild-overlay t)
-    pkgbuild-overlay))
 
 (defun pkgbuild-file-available-p (filename locations)
   "Return t if FILENAME exists in LOCATIONS."
@@ -383,19 +363,21 @@ Otherwise, it saves all modified buffers without asking."
     (error "Missing PKGBUILD"))
   (unless (pkgbuild-syntax-check)
     (error "Syntax Error"))
-  (when (pkgbuild-source-check)       ;all sources available
-    (save-excursion
-      (goto-char (point-min))
-      (while (re-search-forward "^[[:space:]]*\\\(md\\\|sha\\\)[[:digit:]]+sums\\\(_[^=]+\\\)?=([^()]*)[ \f\t\r\v]*\n?" (point-max) t) ;sum line exists
-        (delete-region (match-beginning 0) (match-end 0)))
-      (goto-char (point-max))
-      (if (re-search-backward "^[[:space:]]*source\\\(_[^=]+\\\)?=([^()]*)" (point-min) t)
-          (progn
-            (goto-char (match-end 0))
-            (insert "\n"))
-        (error "Missing source line")
-        (goto-char (point-max)))
-      (insert (pkgbuild-trim-right (pkgbuild-sums-line))))))
+  (pkgbuild-flymkake-check 					;FIXME: misuse of flymake
+   (lambda (diagnostics)
+     (unless diagnostics
+       (save-excursion
+	 (goto-char (point-min))
+	 (while (re-search-forward "^[[:space:]]*\\\(md\\\|sha\\\)[[:digit:]]+sums\\\(_[^=]+\\\)?=([^()]*)[ \f\t\r\v]*\n?" (point-max) t) ;sum line exists
+	   (delete-region (match-beginning 0) (match-end 0)))
+	 (goto-char (point-max))
+	 (if (re-search-backward "^[[:space:]]*source\\\(_[^=]+\\\)?=([^()]*)" (point-min) t)
+	     (progn
+	       (goto-char (match-end 0))
+	       (insert "\n"))
+	   (error "Missing source line")
+	   (goto-char (point-max)))
+	 (insert (pkgbuild-trim-right (pkgbuild-sums-line))))))))
 
 (defun pkgbuild-update-srcinfo ()
   "Update .SRCINFO."
@@ -568,9 +550,12 @@ with no args, if that value is non-nil."
   (easy-menu-add pkgbuild-mode-menu)
   ;; This does not work because makepkg req. saved file
   (add-hook 'write-file-functions 'pkgbuild-update-sums-line-hook nil t)
+  (unless (memq 'pkgbuild-flymkake-check flymake-diagnostic-functions)
+    (make-local-variable 'flymake-diagnostic-functions)
+    (push 'pkgbuild-flymkake-check flymake-diagnostic-functions))
   (if (= (buffer-size) 0)
       (pkgbuild-initialize)
-    (and (pkgbuild-syntax-check) (pkgbuild-source-check))))
+    (flymake-mode-on)))
 
 (defadvice sh-must-be-shell-mode (around no-check-if-in-pkgbuild-mode activate)
   "Do not check for `shell-mode' if major mode is \\[pkgbuild-makepkg]."
