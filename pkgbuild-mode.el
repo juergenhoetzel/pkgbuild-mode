@@ -328,21 +328,17 @@ REPORT-FN is flymake's callback function."
 		(split-string
 		 (shell-command-to-string
 		  (format "bash -c '%s'" "source PKGBUILD 2>/dev/null && for source in ${source[@]};do echo $source|sed \"s|:.*://.*||g\"|sed \"s|^.*://.*/||g\";done"))))
-	       (source-locations (pkgbuild-source-locations))
-	       (single-glob (and (= 1 (length source-locations))
-				 (> (length sources) (length source-locations)))))
-	  (when single-glob
-	    (setq source-locations (make-list (length sources) (car source-locations))))
-	  (if (= (length sources) (length source-locations))
-	      (cl-loop for source in sources with all-available = t
-		       for source-location in source-locations
-		       do (when (not (pkgbuild-file-available-p source (split-string pkgbuild-source-directory-locations ":")))
-			    (setq all-available nil)
-			    (push (flymake-make-diagnostic (current-buffer) (car source-location) (cdr source-location)
-							   :error (format "%s not found in locations: %s" source pkgbuild-source-directory-locations))
-				  diagnostics))
-		       finally (funcall report-fn diagnostics))
-	    (flymake-error (format "cannot verify sources: don't use globbing %d/%d" (length sources) (length source-locations)))))
+	       (source-locations (pkgbuild-source-locations)))
+	  (when (> (length sources) (length source-locations))
+	    (setq source-locations (make-list (length sources) (cons (caar source-locations)(cdar (last source-locations))))))
+	  (cl-loop for source in sources with all-available = t
+		   for source-location in source-locations
+		   do (when (not (pkgbuild-file-available-p source (split-string pkgbuild-source-directory-locations ":")))
+			(setq all-available nil)
+			(push (flymake-make-diagnostic (current-buffer) (car source-location) (cdr source-location)
+						       :error (format "%s not found in locations: %s" source pkgbuild-source-directory-locations))
+			      diagnostics))
+		   finally (funcall report-fn diagnostics)))
       (flymake-error "No source line found"))))
 
 
