@@ -315,6 +315,16 @@ Otherwise, it saves all modified buffers without asking."
 	   if (not (= (car item) (cadr item)))
 	   collect (cons (car item) (cadr item))))
 
+(defun pkgbuild--sources()
+  (let ((output-buffer (generate-new-buffer "sources"))
+	(shell-file-name "/bin/bash"))
+    (call-shell-region (point-min) (point-max)
+		       "source /dev/stdin 2>/dev/null && for source in ${source[@]};do echo $source|sed \"s|:.*://.*||g\"|sed \"s|^.*://.*/||g\";done" nil output-buffer)
+    (prog1
+	(with-current-buffer output-buffer
+	  (split-string (buffer-string)))
+      (kill-buffer output-buffer))))
+
 (defun pkgbuild-flymkake-check (report-fn &rest _args)
   "Run flymake spell checker.
 
@@ -322,12 +332,8 @@ REPORT-FN is flymake's callback function."
   (save-excursion
     (goto-char (point-min))
     (if (search-forward-regexp "^\\s-*source[^=]*=(\\([^()]*\\))" (point-max) t)
-	(let* ((shell-file-name "/bin/bash")
-	       diagnostics
-	       (sources
-		(split-string
-		 (shell-command-to-string
-		  (format "bash -c '%s'" "source PKGBUILD 2>/dev/null && for source in ${source[@]};do echo $source|sed \"s|:.*://.*||g\"|sed \"s|^.*://.*/||g\";done"))))
+	(let* (diagnostics
+	       (sources (pkgbuild--sources))
 	       (source-locations (pkgbuild-source-locations)))
 	  (when (> (length sources) (length source-locations))
 	    (setq source-locations (make-list (length sources) (cons (caar source-locations)(cdar (last source-locations))))))
