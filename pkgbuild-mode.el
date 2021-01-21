@@ -110,6 +110,7 @@
 ;;; Code:
 
 (require 'cl-lib)
+(require 'subr-x)
 (require 'sh-script)
 (require 'advice)
 (require 'compile)
@@ -290,12 +291,6 @@ Otherwise, it saves all modified buffers without asking."
   (define-key pkgbuild-mode-map "\C-c\C-s" 'pkgbuild-update-srcinfo)
   (define-key pkgbuild-mode-map "\C-c\C-e" 'pkgbuild-etags))
 
-(defun pkgbuild-trim-right (str)	;Helper function
-  "Trim whitespace from end of the STR."
-  (if (string-match "[ \f\t\n\r\v]+$" str -1)
-      (pkgbuild-trim-right (substring str 0 -1))
-    str))
-
 (defun pkgbuild-source-points()
   (save-excursion
     (goto-char (point-min))
@@ -385,7 +380,7 @@ REPORT-FN is flymake's callback function."
 	       (insert "\n"))
 	   (error "Missing source line")
 	   (goto-char (point-max)))
-	 (insert (pkgbuild-trim-right (pkgbuild-sums-line))))))))
+	 (insert (string-trim-right (pkgbuild-sums-line))))))))
 
 (defun pkgbuild-update-srcinfo ()
   "Update .SRCINFO."
