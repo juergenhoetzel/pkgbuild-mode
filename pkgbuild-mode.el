@@ -498,10 +498,9 @@ command."
   (let (line err-p)
     (with-current-buffer buf
       (goto-char (point-min))
-      (if (re-search-forward pkgbuild-bash-error-line-re nil t)
-	  (progn
-	    (setq line (string-to-number (match-string 1)))
-	    (setq err-p t)))
+      (when (re-search-forward pkgbuild-bash-error-line-re nil t)
+	(setq line (string-to-number (match-string 1)))
+	(setq err-p t))
       (cl-values err-p line))))
 
 (defun pkgbuild-tarball-files ()
