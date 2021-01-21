@@ -402,12 +402,11 @@ REPORT-FN is flymake's callback function."
 
 (defun pkgbuild-update-sums-line-hook ()
   "Update sum lines if the file was modified."
-  (if (and pkgbuild-update-sums-on-save (not pkgbuild-in-hook-recursion))
-      (progn
-	(setq pkgbuild-in-hook-recursion t)
-	(save-buffer)			;always save BUFFER 2 times so we get the correct sums in this hook
-	(setq pkgbuild-in-hook-recursion nil)
-	(pkgbuild-update-sums-line))))
+  (when (and pkgbuild-update-sums-on-save (not pkgbuild-in-hook-recursion))
+    (setq pkgbuild-in-hook-recursion t)
+    (save-buffer)			;always save BUFFER 2 times so we get the correct sums in this hook
+    (setq pkgbuild-in-hook-recursion nil)
+    (pkgbuild-update-sums-line)))
 
 (defun pkgbuild-initialize ()
   "Create a default pkgbuild if one does not exist or is empty."
