@@ -417,11 +417,11 @@ REPORT-FN is flymake's callback function."
 If so, give the user the choice of aborting the process or the current
 command."
   (let ((process (get-buffer-process (get-buffer buffer))))
-    (if (and process (eq (process-status process) 'run))
-	(if (yes-or-no-p (concat "Process `" (process-name process)
-				 "' running.  Kill it? "))
-	    (delete-process process)
-	  (error "Cannot run two simultaneous processes")))))
+    (when (and process (eq (process-status process) 'run))
+      (if (yes-or-no-p (concat "Process `" (process-name process)
+			       "' running.  Kill it? "))
+	  (delete-process process)
+	(error "Cannot run two simultaneous processes")))))
 
 (defun pkgbuild-makepkg (command)
   "Use makepkg COMMAND to build package."
