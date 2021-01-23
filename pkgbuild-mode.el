@@ -475,8 +475,10 @@ command."
   (let	((shell-file-name "/bin/bash")
 	 (stderr-buffer (concat "*PKGBUILD(" (buffer-file-name) ") stderr*"))
 	 (stdout-buffer (concat "*PKGBUILD(" (buffer-file-name) ") stdout*")))
-    (if (get-buffer stderr-buffer) (kill-buffer stderr-buffer))
-    (if (get-buffer stdout-buffer) (kill-buffer stdout-buffer))
+    (when (get-buffer stderr-buffer)
+      (kill-buffer stderr-buffer))
+    (when (get-buffer stdout-buffer)
+      (kill-buffer stdout-buffer))
     (if (not (zerop
 	      (cl-labels ((message (arg &rest args) nil)) ;Hack disable empty output
 		(shell-command "bash -c 'source PKGBUILD'" stdout-buffer stderr-buffer))))
