@@ -136,7 +136,7 @@
 ;; Local variables
 
 (defgroup pkgbuild nil
-  "pkgbuild mode (ArchLinux Packages)."
+  "PKGBUILD mode (ArchLinux Packages)."
   :prefix "pkgbuild-"
   :group 'languages)
 
@@ -491,7 +491,9 @@ command."
 
 
 (defun pkgbuild-postprocess-stderr (buf)	;multiple values return
-  "Find errors in BUF.If an error occurred return multiple values (t line), otherwise return multiple values (nil line).  BUF must exist."
+  "Find errors in BUF.
+If an error occurred return multiple values (t line), otherwise
+return multiple values (nil line). BUF must exist."
   (let (line err-p)
     (with-current-buffer buf
       (goto-char (point-min))
@@ -539,8 +541,9 @@ command."
 
 ;;;###autoload
 (define-derived-mode pkgbuild-mode shell-script-mode "PKGBUILD"
-  "Major mode for editing PKGBUILD files. This is much like shell-script-mode mode.
- Turning on pkgbuild mode calls the value of the variable `pkgbuild-mode-hook'
+  "Major mode for editing PKGBUILD files.
+This is much like 'shell-script-mode' mode.
+Turning on pkgbuild mode calls the value of the variable `pkgbuild-mode-hook'
 with no args, if that value is non-nil."
   (require 'easymenu)
   (easy-menu-define pkgbuild-call-menu pkgbuild-mode-map
