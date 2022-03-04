@@ -1,6 +1,6 @@
 ;;; pkgbuild-mode.el --- Interface to the ArchLinux package manager
 
-;; Copyright (C) 2005-2021 Juergen Hoetzel
+;; Copyright (C) 2005-2022 Juergen Hoetzel
 ;;
 ;; Author: Juergen Hoetzel <juergen@hoetzel.info>
 ;; Maintainer: Juergen Hoetzel <juergen@hoetzel.info>
