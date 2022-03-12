@@ -250,9 +250,9 @@ value of `user-mail-address'."
   :type 'string
   :group 'pkgbuild)
 
-(defcustom pkgbuild-sums-command "makepkg -g 2>/dev/null"
+(defcustom pkgbuild-sums-command '("makepkg" "-g")
   "Shell command to generate *sums lines."
-  :type 'string
+  :type '(repeat string)
   :group 'pkgbuild)
 
 (defcustom pkgbuild-srcinfo-command "makepkg --printsrcinfo 2>/dev/null > .SRCINFO"
@@ -357,7 +357,9 @@ REPORT-FN is flymake's callback function."
 
 (defun pkgbuild-sums-line ()
   "Calculate *sums=() line in PKGBUILD."
-  (shell-command-to-string pkgbuild-sums-command))
+  (with-temp-buffer
+    (call-process "makepkg" nil '(t nil) nil "-g")
+    (string-trim (buffer-string))))
 
 (defun pkgbuild-update-sums-line ()
   "Update the sums line in a PKGBUILD."
