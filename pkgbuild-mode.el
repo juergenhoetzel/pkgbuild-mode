@@ -358,7 +358,7 @@ REPORT-FN is flymake's callback function."
 (defun pkgbuild-sums-line ()
   "Calculate *sums=() line in PKGBUILD."
   (with-temp-buffer
-    (call-process "makepkg" nil '(t nil) nil "-g")
+    (process-file "makepkg" nil '(t nil) nil "-g")
     (string-trim (buffer-string))))
 
 (defun pkgbuild-update-sums-line ()
