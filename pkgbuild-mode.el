@@ -373,7 +373,7 @@ REPORT-FN is flymake's callback function."
      (unless diagnostics
        (save-excursion
 	 (goto-char (point-min))
-	 (while (re-search-forward "^[[:space:]]*\\(md\\|sha\\)[[:digit:]]+sums\\(_[^=]+\\)?=([^()]*)[ \f\t\r\v]*\n?" (point-max) t) ;sum line exists
+	 (while (re-search-forward "^[[:space:]]*\\(md\\|sha\\|b2\\)[[:digit:]]+sums\\(_[^=]+\\)?=([^()]*)[ \f\t\r\v]*\n?" (point-max) t) ;sum line exists
 	   (delete-region (match-beginning 0) (match-end 0)))
 	 (goto-char (point-max))
 	 (if (re-search-backward "^[[:space:]]*source\\(_[^=]+\\)?=([^()]*)" (point-min) t)
