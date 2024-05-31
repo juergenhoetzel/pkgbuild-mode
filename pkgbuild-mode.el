@@ -1,4 +1,4 @@
-;;; pkgbuild-mode.el --- Interface to the ArchLinux package manager
+;;; pkgbuild-mode.el --- Interface to the Arch Linux package manager
 
 ;; Copyright (C) 2005-2022 Juergen Hoetzel
 ;;
@@ -283,7 +283,7 @@ Otherwise, it saves all modified buffers without asking."
 
 (unless pkgbuild-mode-map		; Do not change the keymap if it is already set up.
   (setq pkgbuild-mode-map (make-sparse-keymap))
-  (define-key pkgbuild-mode-map "\C-c\C-r"  'pkgbuild-increase-release-tag)
+  (define-key pkgbuild-mode-map "\C-c\C-r" 'pkgbuild-increase-release-tag)
   (define-key pkgbuild-mode-map "\C-c\C-b" 'pkgbuild-makepkg)
   (define-key pkgbuild-mode-map "\C-c\C-a" 'pkgbuild-tar)
   (define-key pkgbuild-mode-map "\C-c\C-u" 'pkgbuild-browse-url)
@@ -292,6 +292,7 @@ Otherwise, it saves all modified buffers without asking."
   (define-key pkgbuild-mode-map "\C-c\C-e" 'pkgbuild-etags))
 
 (defun pkgbuild-source-points()
+  "Return a list of positions where source URL entries begin and end."
   (save-excursion
     (goto-char (point-min))
     (when (search-forward-regexp "^\\s-*source=(\\([^()]*\\))" (point-max) t)
@@ -310,7 +311,8 @@ Otherwise, it saves all modified buffers without asking."
 	   if (not (= (car item) (cadr item)))
 	   collect (cons (car item) (cadr item))))
 
-(defun pkgbuild--sources()
+(defun pkgbuild--sources ()
+  "Return list of source filenames."
   (let ((output-buffer (generate-new-buffer "sources"))
 	(shell-file-name "/bin/bash"))
     (call-shell-region (point-min) (point-max)
@@ -446,7 +448,7 @@ command."
 	  (read-only-mode -1))
 	(let ((process
 	       (start-file-process-shell-command "makepkg" pkgbuild-buffer-name
-					    command)))
+						 command)))
 	  (set-process-filter process 'pkgbuild-command-filter)))
     (error "No PKGBUILD in current directory")))
 
@@ -464,12 +466,11 @@ command."
   (interactive)
   (save-excursion
     (goto-char (point-min))
-    (if (search-forward-regexp "^pkgrel=[ \t]*\\([0-9]+\\)[ \t]*$" nil t)
-	(let ((release (1+ (string-to-number (match-string 1)))))
-	  (setq release (int-to-string release))
-	  (replace-match (concat "pkgrel=" release))
-	  (message (concat "Release tag changed to " release ".")))
-      (message "No Release tag found..."))))
+    (if-let* (((search-forward-regexp "^pkgrel=[ \t]*\\([0-9]+\\)[ \t]*$" nil t))
+	      (nstring (int-to-string (1+ (string-to-number (match-string 1))))))
+	(thread-last (replace-match nstring nil nil nil 1)
+		     (message "Set 'pkgrel=%s'"))
+      (warn "No 'pkgrel' found"))))
 
 (defun pkgbuild-syntax-check ()
   "Evaluate PKGBUILD and search stderr for errors."
@@ -495,7 +496,7 @@ command."
 (defun pkgbuild-postprocess-stderr (buf)	;multiple values return
   "Find errors in BUF.
 If an error occurred return multiple values (t line), otherwise
-return multiple values (nil line). BUF must exist."
+return multiple values (nil line).  BUF must exist."
   (let (line err-p)
     (with-current-buffer buf
       (goto-char (point-min))
@@ -528,7 +529,7 @@ return multiple values (nil line). BUF must exist."
       (goto-char (point-max)))
     (let ((process
 	   (start-file-process-shell-command "tar" pkgbuild-buffer-name
-					command)))
+					     command)))
       (set-process-filter process 'pkgbuild-command-filter))))
 
 
@@ -589,4 +590,5 @@ The TAGS file is also immediately visited with `visit-tags-table'."
 ;; Local Variables:
 ;; fill-column: 100
 ;; indent-tabs-mode: t
+;; jinx-languages: "en_US"
 ;; End:
