@@ -291,25 +291,20 @@ Otherwise, it saves all modified buffers without asking."
   (define-key pkgbuild-mode-map "\C-c\C-s" 'pkgbuild-update-srcinfo)
   (define-key pkgbuild-mode-map "\C-c\C-e" 'pkgbuild-etags))
 
-(defun pkgbuild-source-points()
-  "Return a list of positions where source URL entries begin and end."
-  (save-excursion
-    (goto-char (point-min))
-    (when (search-forward-regexp "^\\s-*source=(\\([^()]*\\))" (point-max) t)
-      (let ((l (list (match-beginning 1) (match-end 1)))
-	    (end (match-end 1)))
-	(goto-char (match-beginning 1))
-	(while (search-forward-regexp "\\(\\\\[ \f\t\n\r\v]\\|[ \f\t\n\r\v]\\)+" end t)
-	  (setcdr (last l 2) (cons (match-beginning 0) (cdr (last l 2))))
-	  (setcdr (last l 2) (cons (match-end 1) (cdr (last l 2)))))
-	l))))
-
 (defun pkgbuild-source-locations()
   "Return list of the source regions."
-  (cl-loop for item on (pkgbuild-source-points)
-	   by 'cddr
-	   if (not (= (car item) (cadr item)))
-	   collect (cons (car item) (cadr item))))
+  (save-excursion
+    (goto-char (point-min))
+    (let (result)
+      (condition-case nil
+	  (when-let* ((beg (search-forward-regexp "^\\s-*source=(" (point-max) t))
+		      (end (scan-lists (1- beg) 1 0)))
+	    (while (< (point) end)
+	      (forward-sexp)
+	      (when-let ((bounds (bounds-of-thing-at-point 'sexp)))
+		(push (bounds-of-thing-at-point 'sexp) result))))
+	(error nil))
+      (nreverse  result))))
 
 (defun pkgbuild--sources ()
   "Return list of source filenames."
@@ -328,10 +323,9 @@ Otherwise, it saves all modified buffers without asking."
 REPORT-FN is flymake's callback function."
   (save-excursion
     (goto-char (point-min))
-    (if (search-forward-regexp "^\\s-*source[^=]*=(\\([^()]*\\))" (point-max) t)
+    (if-let ((source-locations (pkgbuild-source-locations)))
 	(let* (diagnostics
-	       (sources (pkgbuild--sources))
-	       (source-locations (pkgbuild-source-locations)))
+	       (sources (pkgbuild--sources)))
 	  (when (> (length sources) (length source-locations))
 	    (setq source-locations (make-list (length sources) (cons (caar source-locations)(cdar (last source-locations))))))
 	  (cl-loop for source in sources with all-available = t
