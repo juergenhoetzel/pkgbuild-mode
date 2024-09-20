@@ -311,10 +311,14 @@ Otherwise, it saves all modified buffers without asking."
   (let ((output-buffer (generate-new-buffer "sources"))
 	(shell-file-name "/bin/bash"))
     (call-shell-region (point-min) (point-max)
-		       "source /dev/stdin 2>/dev/null && for source in ${source[@]};do echo $source|sed \"s|:.*://.*||g\"|sed \"s|^.*://.*/||g\";done" nil output-buffer)
+		       "source /dev/stdin && echo ${source[@]}" nil `(,output-buffer nil))
     (prog1
 	(with-current-buffer output-buffer
-	  (split-string (buffer-string)))
+	  (mapcar (lambda (u)
+		    (let ((lr (split-string u "::"))) (if (cdr lr)
+							  (car lr)
+							(string-remove-suffix ".git"(file-name-nondirectory (car lr))))))
+		  (split-string (buffer-string) nil t)))
       (kill-buffer output-buffer))))
 
 (defun pkgbuild-flymkake-check (report-fn &rest _args)
