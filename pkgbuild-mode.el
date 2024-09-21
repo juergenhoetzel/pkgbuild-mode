@@ -315,9 +315,10 @@ Otherwise, it saves all modified buffers without asking."
     (prog1
 	(with-current-buffer output-buffer
 	  (mapcar (lambda (u)
-		    (let ((lr (split-string u "::"))) (if (cdr lr)
-							  (car lr)
-							(string-remove-suffix ".git"(file-name-nondirectory (car lr))))))
+		    (pcase  (split-string u "::")
+		      (`(,local-name ,_) local-name)
+		      (`(,remote-name) (string-remove-suffix ".git"(file-name-nondirectory remote-name)))
+		      (_ (error "Invalid source: %s" u))))
 		  (split-string (buffer-string) nil t)))
       (kill-buffer output-buffer))))
 
