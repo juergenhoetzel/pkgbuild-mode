@@ -1,6 +1,6 @@
 ;;; pkgbuild-mode.el --- Interface to the Arch Linux package manager
 
-;; Copyright (C) 2005-2022 Juergen Hoetzel
+;; Copyright (C) 2005-2024 Juergen Hoetzel
 ;;
 ;; Author: Juergen Hoetzel <juergen@hoetzel.info>
 ;; Maintainer: Juergen Hoetzel <juergen@hoetzel.info>
@@ -38,74 +38,6 @@
 ;;  (autoload 'pkgbuild-mode "pkgbuild-mode.el" "PKGBUILD mode." t)
 ;;  (setq auto-mode-alist (append '(("/PKGBUILD$" . pkgbuild-mode))
 ;;				  auto-mode-alist))
-
-;;; Changelog:
-
-;; 0.14
-;; Support for source_${arch} and md5sums_${arch} (Thanks kolewu)
-
-;; 0.13
-;; Fix PKGBUILD template: Use $srcdir (Thanks amagura)
-
-;; 0.12
-;; pkgbuild-tar: Use "makepkg --source" instead of using a custom tar command
-;; pkgbuild-tar: Use unique output buffers
-
-;; 0.11
-;; Support Sources renaming: https://wiki.archlinux.org/index.php/PKGBUILD#source
-;; Use directory name as default pkgname
-;; Support Tramp (PKGBUILDs on remote machines)
-
-;; 0.10
-;; made the calculation of sums generic (use makepkg.conf setting)
-
-;; 0.9
-;;    fixed `pkgbuild-tar' (empty directory name: thanks Stefan Husmann)
-;;    new custom variable: pkgbuild-template
-;;    code cleanup
-
-;; 0.8
-;;    added `pkgbuild-shell-command' and
-;;	`pkgbuild-shell-command-to-string' (required to always use
-;;	"/bin/bash" when calling shell functions, which create new
-;;	buffers)
-
-
-;; 0.7 make shell-file-name buffer-local set to "/bin/bash" (required
-;; to parse PKGBUILDs)
-
-
-;; 0.6
-;;    New interactive function pkgbuild-etags (C-c C-e)
-;;	create tags table for all PKGBUILDs in your source tree, so you
-;;	can search PKGBUILDs by pkgname. Customize your tags-table-list
-;;	to include the TAGS file in your source tree.
-;;    changed default  makepkg-command (disabled ANSI colors in emacs TERM)
-;;    set default indentation to 2
-
-
-;; 0.5
-;;    New interactive function pkgbuild-browse-url to visit project's website (C-c C-u).
-;;	Customize your browse-url-browser-function
-;;    emacs 22 (cvs snapshot) compatibility: ensure makepkg buffer is not read-only
-
-
-;; 0.4
-;;    handle source parse errors when updating md5sums and opening PKGBUILDs
-;;    only update md5sums if all sources are available
-;;    code cleanup
-;;    highlight sources not available when trying to update md5sums
-;;    and opening PKGBUILDs (this does not work when globbing returns
-;;    multiple filenames)
-
-
-;; 0.3
-;;   Update md5sums line when saving PKGBUILD
-;;     (Can be disabled via custom variable [pkgbuild-update-md5sums-on-save])
-;;   New interactive function pkgbuild-tar to create Source Tarball (C-c C-a)
-;;     (Usefull for AUR uploads)
-;;   Insert warn-messages in md5sums line when source files are not present
-;;   Several bug fixes
 
 ;;; Code:
 
