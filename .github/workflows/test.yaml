@@ -1,0 +1,33 @@
+name: check
+
+on:
+  pull_request:
+    paths-ignore: ["**.org"]
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    name: Run Eldev linters
+    strategy:
+      fail-fast: false
+      matrix:
+        emacs_version:
+          - 29.3
+          - 29.4
+        include:
+          - ignore_warnings: false
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Setup Emacs
+        uses: purcell/setup-emacs@master
+        with:
+          version: ${{ matrix.emacs_version }}
+      - name: Install Eldev
+        uses: emacs-eldev/setup-eldev@v1
+      - name: Eldev lint
+        run: |
+          eldev -dtT  lint
+      - name: Ensure there are no byte-compilation warnings
+        run: |
+          eldev -dtT -C compile --set all --warnings-as-errors
