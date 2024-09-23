@@ -278,15 +278,12 @@ REPORT-FN is flymake's callback function."
 
 (defun pkgbuild-file-available-p (filename locations)
   "Return t if FILENAME exists in LOCATIONS."
-  (cl-find-if
-   (lambda (dir)
-     (let* ((name-local (expand-file-name filename dir)))
-       (file-readable-p
-	(if (and (file-remote-p default-directory) (not (file-remote-p name-local)))
-	    (with-parsed-tramp-file-name default-directory nil
-	      (tramp-make-tramp-file-name method user domain host port name-local))
-	  name-local))))
-   locations))
+  (seq-some (lambda (dir)
+	      (file-readable-p
+	       (expand-file-name filename (if (file-name-absolute-p dir)
+					      (concat (file-remote-p default-directory) dir)
+					    dir ))))
+	    locations))
 
 (defun pkgbuild-sums-line ()
   "Calculate *sums=() line in PKGBUILD."
@@ -476,7 +473,7 @@ return multiple values (nil line).  BUF must exist."
 ;;;###autoload
 (define-derived-mode pkgbuild-mode shell-script-mode "PKGBUILD"
   "Major mode for editing PKGBUILD files.
-This is much like 'shell-script-mode' mode.
+This is much like `shell-script-mode' mode.
 Turning on pkgbuild mode calls the value of the variable `pkgbuild-mode-hook'
 with no args, if that value is non-nil."
   (require 'easymenu)
