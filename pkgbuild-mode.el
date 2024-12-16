@@ -81,7 +81,7 @@ epoch=
 pkgdesc=\"\"
 arch=('i686' 'x86_64')
 url=\"\"
-license=('GPL')
+license=('%s')
 groups=()
 depends=()
 makedepends=()
@@ -127,6 +127,11 @@ package() {
 # vim:set ts=2 sw=2 et:
 "
   "Template for new PKGBUILDs."
+  :type 'string
+  :group 'pkgbuild)
+
+(defcustom pkgbuild-template-default-license-identifier "GPL"
+  "License ID to use in the pkgbuild template"
   :type 'string
   :group 'pkgbuild)
 
@@ -342,7 +347,8 @@ REPORT-FN is flymake's callback function."
 		  pkgbuild-user-full-name
 		  pkgbuild-user-mail-address
 		  (or (substring (file-relative-name (file-name-directory buffer-file-name) "..") 0 -1)
-		      "NAME"))))
+		      "NAME")
+		  pkgbuild-template-default-license-identifier)))
 
 (defun pkgbuild-process-check (buffer)
   "Check if BUFFER has a running process.
