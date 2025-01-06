@@ -493,7 +493,8 @@ with no args, if that value is non-nil."
   (unless (memq 'pkgbuild-flymkake-check flymake-diagnostic-functions)
     (make-local-variable 'flymake-diagnostic-functions)
     (push 'pkgbuild-flymkake-check flymake-diagnostic-functions))
-  (if (= (buffer-size) 0)
+  (if (and (= (buffer-size) 0)
+	   pkgbuild-initialize)
       (pkgbuild-initialize)
     (flymake-mode 1)))
 
