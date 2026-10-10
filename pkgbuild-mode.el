@@ -1,4 +1,4 @@
-;;; pkgbuild-mode.el --- Interface to the Arch Linux package manager
+;;; pkgbuild-mode.el --- Interface to the Arch Linux package manager -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2005-2024 Juergen Hoetzel
 ;;
@@ -44,7 +44,6 @@
 (require 'cl-lib)
 (require 'subr-x)
 (require 'sh-script)
-(require 'advice)
 (require 'compile)
 (require 'tramp)
 (require 'flymake)
@@ -238,7 +237,7 @@ Otherwise, it saves all modified buffers without asking."
 		      (end (scan-lists (1- beg) 1 0)))
 	    (while (< (point) end)
 	      (forward-sexp)
-	      (when-let ((bounds (bounds-of-thing-at-point 'sexp)))
+	      (when-let* ((bounds (bounds-of-thing-at-point 'sexp)))
 		(push (bounds-of-thing-at-point 'sexp) result))))
 	(error nil))
       (nreverse  result))))
@@ -265,7 +264,7 @@ Otherwise, it saves all modified buffers without asking."
 REPORT-FN is flymake's callback function."
   (save-excursion
     (goto-char (point-min))
-    (if-let ((source-locations (pkgbuild-source-locations)))
+    (if-let* ((source-locations (pkgbuild-source-locations)))
 	(let* (diagnostics
 	       (sources (pkgbuild--sources)))
 	  (when (> (length sources) (length source-locations))
@@ -417,7 +416,7 @@ command."
     (when (get-buffer stdout-buffer)
       (kill-buffer stdout-buffer))
     (if (not (zerop
-	      (cl-labels ((message (arg &rest args) nil)) ;Hack disable empty output
+	      (cl-labels ((message (_arg &rest _args) nil)) ;Hack disable empty output
 		(shell-command "bash -c 'source PKGBUILD'" stdout-buffer stderr-buffer))))
 	(cl-multiple-value-bind (err-p line) (pkgbuild-postprocess-stderr stderr-buffer)
 	  (if err-p
@@ -498,10 +497,10 @@ with no args, if that value is non-nil."
       (pkgbuild-initialize)
     (flymake-mode 1)))
 
-(defadvice sh-must-be-shell-mode (around no-check-if-in-pkgbuild-mode activate)
+(define-advice sh-must-be-shell-mode (:around (orig-fun &rest args) no-check-if-in-pkgbuild-mode)
   "Do not check for `shell-mode' if major mode is \\[pkgbuild-makepkg]."
   (if (not (eq major-mode 'pkgbuild-mode)) ;workaround for older shell-scrip-mode versions
-      ad-do-it))
+      (apply orig-fun args)))
 
 (defun pkgbuild-etags (toplevel-directory)
   "Create TAGS file by running `etags' in TOPLEVEL-DIRECTORY.
