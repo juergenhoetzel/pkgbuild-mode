@@ -1,0 +1,128 @@
+#+title: pkgbuild-mode
+#+subtitle: An Emacs major mode for editing Arch Linux PKGBUILD files
+#+author: Juergen Hoetzel
+#+email: juergen@hoetzel.info
+#+language: en
+
+[[https://melpa.org/#/pkgbuild-mode][file:https://melpa.org/packages/pkgbuild-mode-badge.svg]]
+
+* About
+
+~pkgbuild-mode~ provides an Emacs interface for editing and building
+[[https://wiki.archlinux.org/title/PKGBUILD][PKGBUILD]] files, the build scripts used by the
+[[https://archlinux.org/][Arch Linux]] package manager.
+
+Turning on ~pkgbuild-mode~ calls the value of the variable
+~pkgbuild-mode-hook~ with no args, if that value is non-nil.
+
+* Features
+
+- Automatic recognition of ~PKGBUILD~ files
+- Syntax checking (the buffer is sourced with ~bash~ to detect errors)
+- Update the ~*sums~ lines (~md5sums~, ~sha256sums~, ...) automatically via
+  ~makepkg -g~
+- Generate and update ~.SRCINFO~ files
+- Build binary packages and source tarballs with ~makepkg~
+- Increase the ~pkgrel~ release tag with a single keystroke
+- Open the package ~url~ in your default browser
+- ~etags~ support: create a ~TAGS~ file for quick navigation between
+  ~PKGBUILD~ files in a toplevel directory
+- ~flymake~ integration: warns about source files which are not available in
+  ~pkgbuild-source-directory-locations~
+- Template insertion for new ~PKGBUILD~ files
+
+* Requirements
+
+- Emacs 26.1 or later
+- [[https://man.archlinux.org/man/makepkg.8][makepkg]] (for sums generation, building packages and generating
+  ~.SRCINFO~)
+- =/bin/bash=
+
+* Installation
+
+** MELPA
+
+~pkgbuild-mode~ is available from [[https://melpa.org/][MELPA]]:
+
+#+begin_src emacs-lisp
+M-x package-install RET pkgbuild-mode RET
+#+end_src
+
+With ~use-package~:
+
+#+begin_src emacs-lisp
+(use-package pkgbuild-mode
+  :mode "/PKGBUILD$")
+#+end_src
+
+** Manual
+
+Put this in your ~init.el~ file to enable autoloading of ~pkgbuild-mode~
+and auto-recognition of ~PKGBUILD~ files:
+
+#+begin_src emacs-lisp
+(autoload 'pkgbuild-mode "pkgbuild-mode.el" "PKGBUILD mode." t)
+(setq auto-mode-alist (append '(("/PKGBUILD$" . pkgbuild-mode))
+                              auto-mode-alist))
+#+end_src
+
+* Usage
+
+| Key     | Command                        | Description                                  |
+|---------+--------------------------------+----------------------------------------------|
+| =C-c C-b= | ~pkgbuild-makepkg~               | Build a binary package with ~makepkg~          |
+| =C-c C-a= | ~pkgbuild-tar~                   | Build a source tarball (~makepkg --source~)    |
+| =C-c C-m= | ~pkgbuild-update-sums-line~      | Update the ~*sums~ lines                       |
+| =C-c C-s= | ~pkgbuild-update-srcinfo~        | Update the ~.SRCINFO~ file                     |
+| =C-c C-r= | ~pkgbuild-increase-release-tag~  | Increase the ~pkgrel~ release tag by 1         |
+| =C-c C-u= | ~pkgbuild-browse-url~            | Visit the package ~url~                          |
+| =C-c C-e= | ~pkgbuild-etags~                 | Create a ~TAGS~ file                            |
+
+If ~pkgbuild-update-sums-on-save~ is non-nil (the default), the sums lines
+are updated automatically whenever the ~PKGBUILD~ buffer is saved.
+
+* Configuration
+
+All options are available via the ~pkgbuild~ customization group
+(~M-x customize-group RET pkgbuild RET~).  The most notable ones:
+
+- ~pkgbuild-initialize~ :: Automatically insert a default ~PKGBUILD~
+  template when visiting a new, empty ~PKGBUILD~ file.
+- ~pkgbuild-template~ :: The template used for new ~PKGBUILD~ files.
+- ~pkgbuild-template-default-license-identifier~ :: The license
+  identifier used in the template (default: ~GPL~).
+- ~pkgbuild-user-full-name~ and ~pkgbuild-user-mail-address~ :: Used for
+  the ~# Maintainer:~ header in the template.  Default to ~user-full-name~
+  and ~user-mail-address~.
+- ~pkgbuild-makepkg-command~ :: The default ~makepkg~ command
+  (default: ~makepkg -m -f ~).
+- ~pkgbuild-read-makepkg-command~ / ~pkgbuild-read-tar-command~ :: Prompt
+  for the commands to use instead of using the defaults.
+- ~pkgbuild-update-sums-on-save~ :: Update sums lines on save
+  (default: ~t~).
+- ~pkgbuild-source-directory-locations~ :: Colon-separated search path
+  used by the ~flymake~ checker to find source files
+  (default: ~.:src:/var/cache/pacman/src~).
+- ~pkgbuild-sums-command~ :: Shell command used to generate ~*sums~ lines
+  (default: ~("makepkg" "-g")~).
+- ~pkgbuild-srcinfo-command~ :: Shell command used to generate ~.SRCINFO~
+  (default: ~makepkg --printsrcinfo 2>/dev/null > .SRCINFO~).
+- ~pkgbuild-ask-about-save~ :: Whether ~pkgbuild-makepkg~ asks which
+  buffers to save before starting the build (default: ~t~).
+
+* Contributing
+
+Bug reports and pull requests are welcome at
+[[https://github.com/juergenhoetzel/pkgbuild-mode]].
+
+* License
+
+This program is free software; you can redistribute it and/or modify it
+under the terms of the GNU General Public License as published by the Free
+Software Foundation; either version 2 of the License, or (at your option)
+any later version.
+
+This program is distributed in the hope that it will be useful, but
+WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General
+Public License for more details.
