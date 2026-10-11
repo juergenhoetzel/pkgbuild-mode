@@ -269,10 +269,9 @@ REPORT-FN is flymake's callback function."
 	       (sources (pkgbuild--sources)))
 	  (when (> (length sources) (length source-locations))
 	    (setq source-locations (make-list (length sources) (cons (caar source-locations)(cdar (last source-locations))))))
-	  (cl-loop for source in sources with all-available = t
+	  (cl-loop for source in sources
 		   for source-location in source-locations
 		   do (when (not (pkgbuild-file-available-p source (split-string pkgbuild-source-directory-locations ":")))
-			(setq all-available nil)
 			(push (flymake-make-diagnostic (current-buffer) (car source-location) (cdr source-location)
 						       :error (format "%s not found in locations: %s" source pkgbuild-source-directory-locations))
 			      diagnostics))
